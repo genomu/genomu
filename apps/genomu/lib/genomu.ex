@@ -17,7 +17,7 @@ defmodule Genomu do
   @type operation :: Genomu.Operation.t
   @type timestamp :: non_neg_integer
 
-  @type revision
+  @type revision  :: binary
   @type cell      :: {key, revision}
 
   @doc """

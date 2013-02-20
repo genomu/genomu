@@ -11,7 +11,7 @@ defmodule Genomu.Coordinator do
                    {:vnodes, :any | :primary} |
                    {:cell, Genomu.VNode.cell} |
                    {:command, Genomu.command} |
-                   {:interval, ITC.t}
+                   {:revision, Genomu.revision}
 
   @type options :: [option]
   @type index :: binary
@@ -40,7 +40,7 @@ defmodule Genomu.Coordinator do
   defrecord State, preflist: nil,
                    vnodes: :any,
                    command: nil, cell: nil,
-                   interval: nil,
+                   revision: nil,
                    n: nil, r: nil, dr: nil,
                    timeout: nil,
                    ref: nil, from: nil,
@@ -50,7 +50,7 @@ defmodule Genomu.Coordinator do
     record_type    preflist: :riak_core_apl.preflist,
                    vnodes: :any | :primary,
                    command: Genomu.command,
-                   cell: Genomu.cell, interval: ITC.t,
+                   cell: Genomu.cell, revision: Genomu.revision,
                    n: pos_integer, r: non_neg_integer, dr: non_neg_integer,
                    timeout: timeout,
                    ref: Genomu.ref, from: {pid, tag :: term} | nil,
@@ -91,7 +91,7 @@ defmodule Genomu.Coordinator do
 
   defevent execute/timeout, state: State[] = state do
     :riak_core_vnode_master.command(state.preflist,
-                                    {state.cell, state.interval, state.command, state.ref},
+                                    {state.cell, state.revision, state.command, state.ref},
                                     {:fsm, :undefined, self},
                                     Genomu.VNode_master)
     {:next_state, :waiting, state, 0}

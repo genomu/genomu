@@ -4,6 +4,11 @@ defmodule Genomu.Channel do
 
   alias :itc, as: ITC # TODO: remove when ITC is done
 
+  @spec start :: {:ok, pid} | {:error, reason :: term}
+  def start do
+    Genomu.Channel.fork Genomu.Interval.Root
+  end
+
   @spec start_link(root :: atom | boolean, parent :: nil | pid | atom, interval :: ITC.t) :: {:ok, pid} | {:error, reason :: term}
   def start_link(false, parent, interval) do
     :gen_server.start_link(__MODULE__, {false, parent, interval}, [])
@@ -39,7 +44,7 @@ defmodule Genomu.Channel do
     def lookup(key, __MODULE__[snapshot: snapshot]) do
       case :ets.lookup(snapshot, key) do
         [] -> nil
-        [{^key, i}] -> i
+        [{^key, i}] -> ITC.encode(i) |> Genomu.Utils.pad_bitstring(8)
       end
     end
 
@@ -98,9 +103,10 @@ defmodule Genomu.Channel do
   defcall execute(key, cmd, options), state: State[] = state do
     interval = next_interval(state.interval, cmd)
     cell = {key, state.lookup(key)}
+    revision = ITC.encode(interval) |> Genomu.Utils.pad_bitstring(8)
     coordination_options = Keyword.merge([cell: cell,
                                           command: cmd,
-                                          interval: interval], options)
+                                          revision: revision], options)
     result = Genomu.Coordinator.run(coordination_options)
     state = memoize(key, cmd, interval, state)
     {:reply, result, state}
