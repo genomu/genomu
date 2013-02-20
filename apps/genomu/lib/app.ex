@@ -5,11 +5,6 @@ defsupervisor Genomu.Sup do
          function: :start, args: [:undefined, :undefined],
          modules: :dynamic
 
-  worker id: Genomu.Interval
-  supervisor Intervals, strategy: :simple_one_for_one do
-    worker id: Genomu.Interval, restart: :transient
-  end
-
   worker id: Genomu.VNode,
          module: :riak_core_vnode_master, args: [Genomu.VNode],
          modules: [:riak_core_vnode_master, Genomu.VNode]
@@ -18,6 +13,10 @@ defsupervisor Genomu.Sup do
     worker id: Worker, restart: :temporary,
            module: Genomu.Coordinator
   end
+
+  worker id: Genomu.Interval.Root,
+         module: Genomu.Channel, args: [Genomu.Interval.Root, nil, ITC.seed],
+         restart: :permanent
 
   supervisor Channels, strategy: :simple_one_for_one do
     worker id: Genomu.Channel, restart: :temporary

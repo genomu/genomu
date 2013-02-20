@@ -2,30 +2,31 @@ defmodule Genomu.Channel do
   use GenServer.Behaviour
   import GenX.GenServer
 
-  @spec start_link(ITC.t) :: {:ok, pid} | {:error, reason :: term}
-  def start_link(interval) do
-    :gen_server.start_link(__MODULE__, interval, [])
+  alias :itc, as: ITC # TODO: remove when ITC is done
+
+  @spec start_link(root :: atom | boolean, parent :: nil | pid | atom, interval :: ITC.t) :: {:ok, pid} | {:error, reason :: term}
+  def start_link(false, parent, interval) do
+    :gen_server.start_link(__MODULE__, {false, parent, interval}, [])
+  end
+  def start_link(true, parent, interval) do
+    :gen_server.start_link(__MODULE__, {true, parent, interval}, [])
+  end
+  def start_link(name, parent, interval) do
+    :gen_server.start_link({:local, name}, __MODULE__, {true, parent, interval}, [])
   end
 
-  @spec start_link :: {:ok, pid} | {:error, reason :: term}
-  def start_link do
-    start_link(Genomu.Interval.fork)
-  end
+  defrecord State, root: false, parent: nil,
+                   interval: nil,
+                   snapshot: nil, children: nil do
 
-  @spec start :: {:ok, pid} | {:error, reason :: term}
-  def start do
-    :supervisor.start_child(Genomu.Sup.Channels, [])
-  end
-
-  defrecord State, interval: nil,
-                   snapshot: nil do
-
-    record_type interval: nil | ITC.t,
-                snapshot: :ets.tid
+    record_type root: boolean, parent: nil | pid | atom,
+                interval: nil | ITC.t,
+                snapshot: nil | :ets.tid, children: nil | :ets.tid
 
     def blank(opts) do
       snapshot = :ets.new(__MODULE__.Snapshot, [:ordered_set])
-      new(Keyword.merge([snapshot: snapshot], opts))
+      children = :ets.new(__MODULE__.Children, [:ordered_set])
+      new(Keyword.merge([snapshot: snapshot, children: children], opts))
     end
 
     @spec memoize(Genomu.key, t) :: t
@@ -44,11 +45,54 @@ defmodule Genomu.Channel do
 
   end
 
-  use Genomu.Interval.Server
-
-  def init(interval) do
-    {:ok, State.blank(interval: interval)}
+  def init({root, parent, interval}) do
+    {:ok, State.blank(root: root, parent: parent, interval: interval)}
   end
+
+  @spec interval(pid | atom) :: ITC.t
+  defcall interval, state: State[interval: i] = state do
+    {:reply, i, state}
+  end
+
+  @spec root?(pid | atom) :: boolean
+  defcall root?, state: State[root: root] = state do
+    {:reply, root, state}
+  end
+
+  @spec fork(pid | atom) :: ITC.t
+  @spec fork(pid | atom, root :: atom | boolean) :: ITC.t
+  def fork(server), do: fork(server, false)
+
+  defcall fork(root), state: State[interval: i, children: c] = state do
+    {new_interval, channel_interval} = ITC.fork(i)
+    {:ok, channel} = :supervisor.start_child(Genomu.Sup.Channels, [root, self, channel_interval])
+    Process.monitor(channel)
+    :ets.insert(c, [{channel, channel_interval},
+                    {channel_interval, channel}])
+    state = state.interval(new_interval)
+    {:reply, {:ok, channel}, state}
+  end
+
+  defcast update(channel, new_interval), state: State[children: c] = state do
+    case :ets.lookup(c, channel) do
+      [{^channel, interval}] ->
+        :ets.insert(c, [{channel, new_interval}, {new_interval, channel}])
+        :ets.delete(c, interval)
+      [] -> 
+        :ok # TODO: log a warning?
+    end
+    {:noreply, state}
+  end
+
+  def handle_info({:DOWN, _ref, :process, pid, _},
+                  __MODULE__.State[interval: i, children: c] = state) do
+    [{^pid, child_interval}] = :ets.lookup(c, pid)
+    :ets.delete(c, pid)
+    :ets.delete(c, child_interval)
+    new_interval = ITC.join(i, child_interval)
+    state = state.interval(new_interval)
+    {:noreply, state}
+  end  
 
   @spec execute(pid, Genomu.key, Genomu.command, Keyword.t) :: term
   defcall execute(key, cmd, options), state: State[] = state do
