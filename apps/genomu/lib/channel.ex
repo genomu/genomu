@@ -106,6 +106,16 @@ defmodule Genomu.Channel do
     {:reply, result, state}
   end
 
+  @spec commit(pid | atom) :: :ok | {:error, reason :: term}
+  defcall commit, state: State[parent: parent, interval: i] = state do
+    update(parent, self, i)
+    {:reply, :ok, state}
+  end
+
+  @spec stop(pid | atom) :: :ok
+  defcast stop, state: state do
+    {:stop, :normal, state}
+  end
 
   @spec next_interval(ITC.t, Genomu.command) :: ITC.t
   defp next_interval(i, {:get, _}), do: i
