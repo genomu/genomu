@@ -11,15 +11,15 @@
                    {:fsm, :undefined, pid} |
                    :ignore
 
-   @type command :: {Genomu.cell, ITC.t, Genomu.command,
+   @type command :: {Genomu.cell, Genomu.revision, Genomu.command,
                      Genomu.Coordinator.ref}
 
    require Lager
 
    defrecord State, partition: nil,
-                    tab: nil do
+                    tab: nil, staging_tab: nil do
      record_type    partition: Genomu.VNode.partition,
-                    tab: :ets.tab
+                    tab: :ets.tid, staging_tab: :ets.tid
    end
 
    @spec start_vnode(non_neg_integer) :: {:ok, pid}
@@ -31,7 +31,8 @@
    def init([partition]) do
      :erlang.process_flag(:trap_exit, true)
      tab = ETS.new(__MODULE__, [:ordered_set])
-     {:ok, State.new(partition: partition, tab: tab)}
+     staging_tab = ETS.new(__MODULE__.Staging, [:ordered_set])
+     {:ok, State.new(partition: partition, tab: tab, staging_tab: staging_tab)}
    end
 
    @spec handle_command(command, sender, State.t) ::
@@ -39,17 +40,14 @@
          {:noreply, State.t} |
          {:async, sender, term, State.t} |
          {:stop, term, State.t}
-   def handle_command({{key, _rev} = cell, interval, cmd, ref}, sender,
-                      State[tab: tab] = state) do
-     case ETS.lookup(tab, cell) do
-       [] -> value = nil
-       [{^cell, {_operation, value}}] -> :ok
-     end
+   def handle_command({{key, _rev} = cell, new_rev, cmd, ref}, sender,
+                      State[staging_tab: tab] = state) do
+     {_prev_operation, value} = lookup_cell(cell, state)
      case cmd do
        {cmd_name, operation} when cmd_name in [:apply, :set] ->
          new_value = Genomu.Operation.apply(operation, value)
          serialized = Genomu.Operation.serialize(operation)
-         ETS.insert(tab, {{key, interval}, {serialized, new_value}})
+         ETS.insert(tab, {{key, new_rev}, {serialized, new_value}})
        {:get, operation} ->
          new_value = Genomu.Operation.apply(operation, value)
      end
@@ -111,6 +109,20 @@
    end
 
    def terminate(_, State[]) do
+   end
+
+   @spec lookup_cell(Genomu.cell, State.t) :: term | nil
+   defp lookup_cell({key, nil}, State[tab: tab]) do
+     case :ets.lookup(tab, key) do
+       [{^key, value}] -> value
+       _ -> {nil, nil}
+     end
+   end
+   defp lookup_cell({_key, _rev} = cell, State[staging_tab: tab]) do
+     case :ets.lookup(tab, cell) do
+       [{^cell, value}] -> value
+       _ -> {nil, nil}
+     end
    end
 
  end
