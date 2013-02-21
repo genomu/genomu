@@ -135,19 +135,21 @@ defmodule ITC do
   end
 
   @spec leq(t, t) :: boolean
-  def leq({n1, l1, r1}, {n2, l2, r2}) do
+  def leq({_, n1}, {_, n2}), do: _leq(n1, n2)
+  def _leq({n1, l1, r1}, {n2, l2, r2}) do
     n1 <= n2 and
-    leq(lift(l1, n1), lift(l2, n2)) and
-    leq(lift(r1, n1), lift(r2, n2))
+    _leq(lift(l1, n1), lift(l2, n2)) and
+    _leq(lift(r1, n1), lift(r2, n2))
   end
-  def leq(n1, {n2, _l2, _r2}) do
+  def _leq(n1, {n2, _l2, _r2}) when is_integer(n1) do
     n1 <= n2
   end
-  def leq({n1, l1, r1}, n2) do
+  def _leq({n1, l1, r1}, n2) when is_integer(n2) do
     n1 <= n2 and
-    leq(lift(l1, n1), n2) and
-    leq(lift(r1, n1), n2)
+    _leq(lift(l1, n1), n2) and
+    _leq(lift(r1, n1), n2)
   end
-  def leq(n1, n2), do: n1 <= n2
+  def _leq(n1, n2) when is_integer(n1) and is_integer(n2), do: n1 <= n2
+  def _leq(t, t), do: true
 
 end
