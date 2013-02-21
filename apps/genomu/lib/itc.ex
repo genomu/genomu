@@ -134,6 +134,12 @@ defmodule ITC do
     {e1, c + 1000}
   end
 
+  @spec eq(t, t) :: boolean
+  def eq(t, t), do: true
+  def eq({_, n1}, {_, n2}), do: _eq(n1, n2)
+  def _eq(t, t), do: true
+  def _eq(_, _), do: false
+
   @spec leq(t, t) :: boolean
   def leq({_, n1}, {_, n2}), do: _leq(n1, n2)
   def _leq({n1, l1, r1}, {n2, l2, r2}) do
@@ -151,5 +157,25 @@ defmodule ITC do
   end
   def _leq(n1, n2) when is_integer(n1) and is_integer(n2), do: n1 <= n2
   def _leq(t, t), do: true
+
+  @spec le(t, t) :: boolean
+  def le(t1, t2) do
+    not(eq(t1, t2)) and leq(t1, t2)
+  end
+
+  @spec concurrent?(t,t) :: boolean
+  def concurrent?(t1, t2) do
+    not(leq(t1, t2)) and not(leq(t2, t1))
+  end
+
+  @spec joinable?(t,t) :: boolean
+  def joinable?(t1, t2) do
+    try do
+      sum(t1, t2)
+      true
+    rescue
+      FunctionClauseError -> false
+    end
+  end
 
 end
