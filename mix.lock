@@ -1,7 +1,7 @@
 [ "basho_stats": {:git,"https://github.com/basho/basho_stats.git","08b37f5295b0b0275a6ee5ca446ff725005d1277",[]},
   "bear": {:git,"https://github.com/boundary/bear.git","b1882d7ee88e775d961a2678e4fafecef7f77705",[tag: "0.1.1"]},
   "exconfig": {:git,"https://github.com/yrashk/exconfig.git","9f02d06c3fba132839cff1f9a639fd63aa2155a3",[]},
-  "exlager": {:git,"https://github.com/khia/exlager.git","c7d727c301214174d0f8155fa66a5b9a1aae826e",[]},
+  "exlager": {:git,"https://github.com/khia/exlager.git","98e2bfc1304061b1bc8cc7770fe6b00b5e9c939e",[]},
   "exmsgpack": {:git,"https://github.com/yrashk/exmsgpack.git","c56443c45367c13f3a02e4e7a55d4c18588a8163",[]},
   "exreloader": {:git,"https://github.com/yrashk/exreloader.git","0698218d917d731a267be929fcfac07782b5a74c",[]},
   "folsom": {:git,"https://github.com/boundary/folsom.git","f694abf41030c0612b5777a42a8d60d2b78f5f47",[]},
