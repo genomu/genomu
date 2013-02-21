@@ -1,6 +1,8 @@
 genomu_src := $(wildcard apps/genomu/lib/*.ex) \
               $(wildcard apps/genomu/lib/**/*.ex) apps/genomu/mix.exs
 
+.PHONY: all test
+
 all: genomu
 
 genomu: apps/genomu/ebin
@@ -22,3 +24,6 @@ remsh:
 
 clean:
 	@cd apps/genomu && $(genomu_path) mix clean
+
+test: apps/genomu/ebin
+	@cd apps/genomu && $(genomu_path) MIX_ENV=test mix test --no-start
