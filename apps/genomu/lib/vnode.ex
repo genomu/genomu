@@ -41,13 +41,13 @@
          {:async, sender, term, State.t} |
          {:stop, term, State.t}
    def handle_command({{key, _rev} = cell, new_rev, cmd, ref}, sender,
-                      State[staging_tab: tab] = state) do
+                      State[] = state) do
      {_prev_operation, value} = lookup_cell(cell, state)
      case cmd do
        {cmd_name, operation} when cmd_name in [:apply, :set] ->
          new_value = Genomu.Operation.apply(operation, value)
          serialized = Genomu.Operation.serialize(operation)
-         ETS.insert(tab, {{key, new_rev}, {serialized, new_value}})
+         stage({key, new_rev}, serialized, new_value, state)
        {:get, operation} ->
          new_value = Genomu.Operation.apply(operation, value)
      end
@@ -123,6 +123,12 @@
        [{^cell, value}] -> value
        _ -> {nil, nil}
      end
+   end
+
+   @spec stage(Genomu.cell, Genomu.Operation.serialized, value :: term, State.t) :: State.t
+   defp stage(cell, serialized, value, State[staging_tab: tab] = state) do
+     ETS.insert(tab, {cell, {serialized, value}})
+     state
    end
 
  end
