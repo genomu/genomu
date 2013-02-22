@@ -104,10 +104,9 @@ defmodule Genomu.Channel do
     interval = next_interval(state.interval, cmd)
     cell = {key, state.lookup(key)}
     revision = ITC.encode(interval) |> Genomu.Utils.pad_bitstring(8)
-    coordination_options = Keyword.merge([cell: cell,
-                                          command: cmd,
-                                          revision: revision], options)
-    result = Genomu.Coordinator.run(coordination_options)
+    coord_options = [cell: cell, command: cmd, revision: revision] |> 
+                    Keyword.merge(options)
+    result = Genomu.Coordinator.run(coord_options)
     state = memoize(key, cmd, interval, state)
     {:reply, result, state}
   end
