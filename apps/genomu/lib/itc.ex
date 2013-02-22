@@ -42,6 +42,11 @@ defmodule ITC do
 
   defp norm({0,0}), do: 0
   defp norm({1,1}), do: 1
+  defp norm({n, m, m}), do: n + m
+  defp norm({n, e1, e2}) do
+    m = minimum(minimum(e1), minimum(e2))
+    {n + m, sink(e1, m), sink(e2, m)}
+  end
   defp norm(i), do: i
 
   defp minimum({n, e1, e2}) do
@@ -67,10 +72,10 @@ defmodule ITC do
   end
   defp lift(n, m), do: n + m
 
-  #defp sink({n, e1, e2}, m) do
-  #  {n - m, e1, e2}
-  #end
-  #defp sink(n, m), do: n - m
+  defp sink({n, e1, e2}, m) do
+    {n - m, e1, e2}
+  end
+  defp sink(n, m), do: n - m
 
   defp join_events({n1, l1, r1}, {n2, l2, r2}) when n1 > n2 do
     join_events({n2, l2, r2}, {n1, l1, r1})
