@@ -42,12 +42,13 @@ defmodule ITC do
 
   defp norm({0,0}), do: 0
   defp norm({1,1}), do: 1
-  defp norm({n, m, m}), do: n + m
-  defp norm({n, e1, e2}) do
+  defp norm(i), do: i
+
+  defp norm_events({n, m, m}) when is_integer(m), do: n + m
+  defp norm_events({n, e1, e2}) do
     m = minimum(minimum(e1), minimum(e2))
     {n + m, sink(e1, m), sink(e2, m)}
   end
-  defp norm(i), do: i
 
   defp minimum({n, e1, e2}) do
     n + minimum(minimum(e1), minimum(e2))
@@ -81,7 +82,7 @@ defmodule ITC do
     join_events({n2, l2, r2}, {n1, l1, r1})
   end
   defp join_events({n1, l1, r1}, {n2, l2, r2}) do
-    norm({n1, join_events(l1, lift(l2, n2-n1)), join_events(r1, lift(r2, n2-n1))})
+    norm_events({n1, join_events(l1, lift(l2, n2-n1)), join_events(r1, lift(r2, n2-n1))})
   end
   defp join_events(n1, {n2, l2, r2}) do
     join_events({n1, 0, 0}, {n2, l2, r2})
@@ -105,14 +106,14 @@ defmodule ITC do
   defp fill(1, e), do: maximum(e)
   defp fill({1, ir},{n, el, er}) do
     er1 = fill(ir, er)
-    norm({n, maximum(maximum(el), minimum(er1)), er1})
+    norm_events({n, maximum(maximum(el), minimum(er1)), er1})
   end
   defp fill({il, 1},{n, el, er}) do
     el1 = fill(il, el)
-    norm({n, el1, maximum(maximum(er), minimum(el1))})
+    norm_events({n, el1, maximum(maximum(er), minimum(el1))})
   end
   defp fill({il, ir},{n, el, er}) do
-    norm({n, fill(il, el), fill(ir, er)})
+    norm_events({n, fill(il, el), fill(ir, er)})
   end
   defp fill(_i, n), do: n
 
