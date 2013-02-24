@@ -12,8 +12,7 @@ defmodule Genomu.Module do
 
       defimpl MsgPack.Protocol, for: __MODULE__ do
         def pack(operation) do
-          (Genomu.Operation.serialize(operation) |> MsgPack.packed_to_binary) |>
-          MsgPack.pack |> MsgPack.packed_to_binary
+          Genomu.Operation.serialize(operation) |> MsgPack.pack
         end
       end
 
@@ -41,7 +40,7 @@ defmodule Genomu.Module do
     quoted = quote do
       def unquote(name)(data) do
         Genomu.Operation.new(__MODULE__, unquote(name),
-                             MsgPack.pack(data) |> MsgPack.packed_to_binary)
+                             MsgPack.pack(data))
       end
     end
     Module.eval_quoted module, quoted
