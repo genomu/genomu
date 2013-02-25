@@ -38,12 +38,12 @@ defmodule ITC.Test.Model do
   end
   defp different do
     (let {t1, t2} =
-       (let {t1, t2} = clock, when: not(ITC.eq(t1, t2))
+       (let {t1, t2} = clock, when: not(ITC.leq(t1, t2) and ITC.leq(t2, t1))
        ), do: {ITC.event(t1), ITC.event(t2)})
   end
   defp equal do
     frequency([
-      {1, (let {t0, t1} = clock, when: ITC.eq(t0, t1))},
+      {1, (let {t0, t1} = clock, when: ITC.leq(t0, t1) and ITC.leq(t1, t0))},
       {9, (let {_, t0} = clock, do: {t0, equal(t0)})},
      ])
   end
