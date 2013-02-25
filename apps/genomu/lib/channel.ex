@@ -2,8 +2,6 @@ defmodule Genomu.Channel do
   use GenServer.Behaviour
   import GenX.GenServer
 
-  alias :itc, as: ITC # TODO: remove when ITC is done
-
   @spec start :: {:ok, pid} | {:error, reason :: term}
   def start do
     Genomu.Channel.fork Genomu.Interval.Root
