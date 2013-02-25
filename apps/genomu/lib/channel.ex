@@ -42,7 +42,7 @@ defmodule Genomu.Channel do
     def lookup(key, __MODULE__[snapshot: snapshot]) do
       case :ets.lookup(snapshot, key) do
         [] -> nil
-        [{^key, i}] -> ITC.encode(i) |> Genomu.Utils.pad_bitstring(8)
+        [{^key, i}] -> ITC.encode_binary(i)
       end
     end
 
@@ -101,7 +101,7 @@ defmodule Genomu.Channel do
   defcall execute(key, cmd, options), state: State[] = state do
     interval = next_interval(state.interval, cmd)
     cell = {key, state.lookup(key)}
-    revision = ITC.encode(interval) |> Genomu.Utils.pad_bitstring(8)
+    revision = ITC.encode_binary(interval)
     coord_options = [cell: cell, command: cmd, revision: revision] |> 
                     Keyword.merge(options)
     result = Genomu.Coordinator.run(coord_options)

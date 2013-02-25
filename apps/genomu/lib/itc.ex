@@ -221,7 +221,7 @@ defmodule ITC do
   @spec decode(binary) :: t
   def decode(b) do
     {i, b} = decode_id(b)
-    {e, ""} = decode_event(b)
+    {e, _} = decode_event(b)
     {i, e}
   end
 
@@ -281,6 +281,14 @@ defmodule ITC do
   end
   defp decode_number(<<1 :: [size(1)], r :: bits>>, b, acc) do
     decode_number(r, b + 1, acc + (1 <<< b))
+  end
+
+  @spec encode_binary(t) :: binary
+  @spec encode_binary(t, pad :: pos_integer) :: binary
+  def encode_binary(clock, pad // 8) do
+    encoded = encode(clock)
+    padding = pad - rem(bit_size(encoded), pad)
+    << encoded :: bitstring, 0 :: size(padding) >>
   end
 
 end

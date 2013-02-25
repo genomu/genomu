@@ -10,9 +10,4 @@ defmodule Genomu.Utils do
     macro*1000000000000+sec*1000000+micro
   end
 
-  def pad_bitstring(bitstring, pad) do
-    padding = pad - rem(bit_size(bitstring),pad)
-    << bitstring :: bitstring, 0 :: size(padding) >>
-  end
-
 end
