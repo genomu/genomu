@@ -23,32 +23,44 @@ defmodule ITC.Test.Model do
       {3, clock(div(size, 2), t0, ITC.event(t0))},
 	    {3, lazy(
         letshrink res = clock(div(size, 2), t1, elem(ITC.fork(t1), 0)), do: res
-				)},
+        )},
 	    {3, lazy(
         letshrink res = clock(div(size, 2), t1, elem(ITC.fork(t1), 1)), do: res
-				)},
+        )},
 	   ])
   end
 
-  defmacrop concurrent do
-    quote do
-      (let {{_, t1}, {_, t2}} = (let {_, t0} = clock do
-        {t1, t2} = ITC.fork(t0)
-        {clock(t1), clock(t2)}
-       end), do: {ITC.event(t1), ITC.event(t2)})
-    end
+  defp concurrent do
+    (let {{_, t1}, {_, t2}} = (let {_, t0} = clock do
+      {t1, t2} = ITC.fork(t0)
+      {clock(t1), clock(t2)}
+     end), do: {ITC.event(t1), ITC.event(t2)})
   end
-  defmacrop different do
-    quote do
-      (let {t1, t2} =
-         (let {t1, t2} = clock, when: not(ITC.eq(t1, t2))
-         ), do: {ITC.event(t1), ITC.event(t2)})
-    end
+  defp different do
+    (let {t1, t2} =
+       (let {t1, t2} = clock, when: not(ITC.eq(t1, t2))
+       ), do: {ITC.event(t1), ITC.event(t2)})
   end
-  defmacrop equal do
-    quote do
-      (let {t0, t1} = clock, when: ITC.eq(t0, t1))
-    end
+  defp equal do
+    frequency([
+      {1, (let {t0, t1} = clock, when: ITC.eq(t0, t1))},
+      {9, (let {_, t0} = clock, do: {t0, equal(t0)})},
+     ])
+  end
+  defp equal(t0) do
+    sized(size, equal(size, t0))
+  end
+  defp equal(0, t0), do: t0
+  defp equal(size, t0) do
+    frequency([
+      {1, t0},
+	    {4, lazy(
+        letshrink res = equal(div(size, 2), elem(ITC.fork(t0), 0)), do: res
+        )},
+	    {5, lazy(
+        letshrink res = equal(div(size, 2), elem(ITC.fork(t0), 1)), do: res
+        )},
+	   ])
   end
 
   property "seed/seed\?" do
