@@ -180,6 +180,12 @@ defmodule ITC.Test.Model do
     end
   end
 
+  property "encode_binary/decode" do
+    forall {_, t} in clock do
+      ITC.decode(ITC.encode_binary(t)) == t
+    end
+  end
+
 end
 
 defmodule ITC.Test.Model.Case do
