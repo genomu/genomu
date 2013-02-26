@@ -8,23 +8,25 @@ defmodule Genomu.Channel do
   end
 
   @spec start_link(root :: atom | boolean, parent :: nil | pid | atom, interval :: ITC.t) :: {:ok, pid} | {:error, reason :: term}
-  def start_link(false, parent, interval) do
-    :gen_server.start_link(__MODULE__, {false, parent, interval}, [])
+  def start_link(false, parent, clock) do
+    :gen_server.start_link(__MODULE__, {false, parent, clock}, [])
   end
-  def start_link(true, parent, interval) do
-    :gen_server.start_link(__MODULE__, {true, parent, interval}, [])
+  def start_link(true, parent, clock) do
+    :gen_server.start_link(__MODULE__, {true, parent, clock}, [])
   end
-  def start_link(name, parent, interval) do
-    :gen_server.start_link({:local, name}, __MODULE__, {true, parent, interval}, [])
+  def start_link(name, parent, clock) do
+    :gen_server.start_link({:local, name}, __MODULE__, {true, parent, clock}, [])
   end
 
   defrecord State, root: false, parent: nil,
-                   interval: nil,
-                   snapshot: nil, children: nil do
+                   clock: nil,
+                   snapshot: nil, log: [],
+                   children: nil do
 
     record_type root: boolean, parent: nil | pid | atom,
-                interval: nil | ITC.t,
-                snapshot: nil | :ets.tid, children: nil | :ets.tid
+                clock: nil | ITC.t,
+                snapshot: nil | :ets.tid, log: [Genomu.Transaction.entry],
+                children: nil | :ets.tid
 
     def blank(opts) do
       snapshot = :ets.new(__MODULE__.Snapshot, [:ordered_set])
@@ -33,28 +35,28 @@ defmodule Genomu.Channel do
     end
 
     @spec memoize(Genomu.key, t) :: t
-    def memoize(key, __MODULE__[snapshot: snapshot, interval: i] = state) do
-      :ets.insert(snapshot, {key, i})
-      state
+    def memoize(key, __MODULE__[snapshot: snapshot, clock: clock, log: log] = state) do
+      :ets.insert(snapshot, {key, clock})
+      state.log([{key, clock}|log])
     end
 
     @spec lookup(Genomu.key, t) :: nil | ITC.t
     def lookup(key, __MODULE__[snapshot: snapshot]) do
       case :ets.lookup(snapshot, key) do
         [] -> nil
-        [{^key, i}] -> ITC.encode_binary(i)
+        [{^key, clock}] -> ITC.encode_binary(clock)
       end
     end
 
   end
 
-  def init({root, parent, interval}) do
-    {:ok, State.blank(root: root, parent: parent, interval: interval)}
+  def init({root, parent, clock}) do
+    {:ok, State.blank(root: root, parent: parent, clock: clock)}
   end
 
-  @spec interval(pid | atom) :: ITC.t
-  defcall interval, state: State[interval: i] = state do
-    {:reply, i, state}
+  @spec clock(pid | atom) :: ITC.t
+  defcall clock, state: State[clock: clock] = state do
+    {:reply, clock, state}
   end
 
   @spec root?(pid | atom) :: boolean
@@ -66,21 +68,28 @@ defmodule Genomu.Channel do
   @spec fork(pid | atom, root :: atom | boolean) :: ITC.t
   def fork(server), do: fork(server, false)
 
-  defcall fork(root), state: State[interval: i, children: c] = state do
-    {new_interval, channel_interval} = ITC.fork(i)
-    {:ok, channel} = :supervisor.start_child(Genomu.Sup.Channels, [root, self, channel_interval])
+  defcall fork(root), state: State[clock: clock, children: c] = state do
+    {new_clock, channel_clock} = ITC.fork(clock)
+    {:ok, channel} = :supervisor.start_child(Genomu.Sup.Channels, [root, self, channel_clock])
     Process.monitor(channel)
-    :ets.insert(c, [{channel, channel_interval},
-                    {channel_interval, channel}])
-    state = state.interval(new_interval)
+    :ets.insert(c, [{channel, channel_clock},
+                    {channel_clock, channel}])
+    state = state.clock(new_clock)
     {:reply, {:ok, channel}, state}
   end
 
-  defcast update(channel, new_interval), state: State[children: c] = state do
+  @spec sync(pid | atom, ITC.t) :: ITC.t
+  defcall sync(clock0), state: State[clock: clock] = state do
+    new_clock = ITC.join(clock, clock0)
+    {clock1, clock2} = ITC.fork(new_clock)
+    {:reply, clock2, state.clock(clock1)}
+  end
+
+  defcast update(channel, new_clock), state: State[children: c] = state do
     case :ets.lookup(c, channel) do
-      [{^channel, interval}] ->
-        :ets.insert(c, [{channel, new_interval}, {new_interval, channel}])
-        :ets.delete(c, interval)
+      [{^channel, clock}] ->
+        :ets.insert(c, [{channel, new_clock}, {new_clock, channel}])
+        :ets.delete(c, clock)
       [] -> 
         :ok # TODO: log a warning?
     end
@@ -88,31 +97,32 @@ defmodule Genomu.Channel do
   end
 
   def handle_info({:DOWN, _ref, :process, pid, _},
-                  __MODULE__.State[interval: i, children: c] = state) do
-    [{^pid, child_interval}] = :ets.lookup(c, pid)
+                  __MODULE__.State[clock: clock, children: c] = state) do
+    [{^pid, child_clock}] = :ets.lookup(c, pid)
     :ets.delete(c, pid)
-    :ets.delete(c, child_interval)
-    new_interval = ITC.join(i, child_interval)
-    state = state.interval(new_interval)
+    :ets.delete(c, child_clock)
+    new_clock = ITC.join(clock, child_clock)
+    state = state.clock(new_clock)
     {:noreply, state}
   end  
 
   @spec execute(pid, Genomu.key, Genomu.command, Keyword.t) :: term
   defcall execute(key, cmd, options), state: State[] = state do
-    interval = next_interval(state.interval, cmd)
+    clock = next_clock(state.clock, cmd)
     cell = {key, state.lookup(key)}
-    revision = ITC.encode_binary(interval)
+    revision = ITC.encode_binary(clock)
     coord_options = [cell: cell, command: cmd, revision: revision] |> 
                     Keyword.merge(options)
     result = Genomu.Coordinator.run(coord_options)
-    state = memoize(key, cmd, interval, state)
+    state = memoize(key, cmd, clock, state)
     {:reply, result, state}
   end
 
   @spec commit(pid | atom) :: :ok | {:error, reason :: term}
-  defcall commit, state: State[parent: parent, interval: i] = state do
-    update(parent, self, i)
-    {:reply, :ok, state}
+  defcall commit, state: State[parent: parent, clock: clock, log: log] = state do
+    clock = sync(parent, clock)
+    update(parent, self, clock)
+    {:reply, :ok, state.clock(clock)}
   end
 
   @spec stop(pid | atom) :: :ok
@@ -120,16 +130,16 @@ defmodule Genomu.Channel do
     {:stop, :normal, state}
   end
 
-  @spec next_interval(ITC.t, Genomu.command) :: ITC.t
-  defp next_interval(i, {:get, _}), do: i
-  defp next_interval(i, _), do: ITC.event(i)
+  @spec next_clock(ITC.t, Genomu.command) :: ITC.t
+  defp next_clock(clock, {:get, _}), do: clock
+  defp next_clock(clock, _), do: ITC.event(clock)
 
   @spec memoize(Genomu.key, Genomu.command, ITC.t, State.t) :: State.t
-  defp memoize(_key, {:get, _}, _interval, state) do
+  defp memoize(_key, {:get, _}, _clock, state) do
     state
   end
-  defp memoize(key, _cmd, interval, State[] = state) do
-    state.interval(interval).memoize(key)
+  defp memoize(key, _cmd, clock, State[] = state) do
+    state.clock(clock).memoize(key)
   end
 
 end
