@@ -188,28 +188,28 @@ defmodule ITC do
   @spec encode(t) :: binary
   def encode({i, e}), do: <<encode_id(i) :: bits, encode_event(e) :: bits>>
 
-  defp encode_id(0), do: <<0 :: [size(2)], 0 :: [size(1)]>>
-  defp encode_id(1), do: <<0 :: [size(2)], 1 :: [size(1)]>>
-  defp encode_id({0, i}), do: <<1 :: [size(2)], encode_id(i) :: bits>>
-  defp encode_id({i, 0}), do: <<2 :: [size(2)], encode_id(i) :: bits>>
+  defp encode_id(0), do: <<0 :: 2, 0 :: 1>>
+  defp encode_id(1), do: <<0 :: 2, 1 :: 1>>
+  defp encode_id({0, i}), do: <<1 :: 2, encode_id(i) :: bits>>
+  defp encode_id({i, 0}), do: <<2 :: 2, encode_id(i) :: bits>>
   defp encode_id({l, r}) do
-    <<3 :: [size(2)], encode_id(l) :: bits, encode_id(r) :: bits>>
+    <<3 :: 2, encode_id(l) :: bits, encode_id(r) :: bits>>
   end
 
   defp encode_event({0, 0, r}), do:
-    <<0 :: [size(1)], 0 :: [size(2)], encode_event(r) :: bits>>
+    <<0 :: 1, 0 :: 2, encode_event(r) :: bits>>
   defp encode_event({0, l, 0}), do:
-    <<0 :: [size(1)], 1 :: [size(2)], encode_event(l) :: bits>>
+    <<0 :: 1, 1 :: 2, encode_event(l) :: bits>>
   defp encode_event({0, l, r}), do:
-    <<0 :: [size(1)], 2 :: [size(2)], encode_event(l) :: bits, encode_event(r) :: bits>>
+    <<0 :: 1, 2 :: 2, encode_event(l) :: bits, encode_event(r) :: bits>>
   defp encode_event({n, 0, r}), do:
-    <<0 :: [size(1)], 3 :: [size(2)], 0 :: [size(1)], 0 :: [size(1)],
+    <<0 :: 1, 3 :: 2, 0 :: 1, 0 :: 1,
        encode_event(n) :: bits, encode_event(r) :: bits>>
   defp encode_event({n, l, 0}), do:
-    <<0 :: [size(1)], 3 :: [size(2)], 0 :: [size(1)], 1 :: [size(1)],
+    <<0 :: 1, 3 :: 2, 0 :: 1, 1 :: 1,
        encode_event(n) :: bits, encode_event(l) :: bits>>
   defp encode_event({n, l, r}), do:
-    <<0 :: [size(1)], 3 :: [size(2)], 1 :: [size(1)],
+    <<0 :: 1, 3 :: 2, 1 :: 1,
        encode_event(n) :: bits, encode_event(l) :: bits, encode_event(r) :: bits>>
   defp encode_event(n), do: encode_number(n, 2)
 
@@ -225,61 +225,58 @@ defmodule ITC do
     {i, e}
   end
 
-  defp decode_id(<<0 :: [size(2)], 0 :: [size(1)], b :: bits>>), do: {0, b}
-  defp decode_id(<<0 :: [size(2)], 1 :: [size(1)], b :: bits>>), do: {1, b}
-  defp decode_id(<<1 :: [size(2)], b :: bits>>) do
+  defp decode_id(<<0 :: 2, 0 :: 1, b :: bits>>), do: {0, b}
+  defp decode_id(<<0 :: 2, 1 :: 1, b :: bits>>), do: {1, b}
+  defp decode_id(<<1 :: 2, b :: bits>>) do
     {i, b} = decode_id(b)
     {{0, i}, b}
   end
-  defp decode_id(<<2 :: [size(2)], b :: bits>>) do
+  defp decode_id(<<2 :: 2, b :: bits>>) do
     {i, b} = decode_id(b)
     {{i, 0}, b}
   end
-  defp decode_id(<<3 :: [size(2)], b :: bits>>) do
+  defp decode_id(<<3 :: 2, b :: bits>>) do
     {l, b} = decode_id(b)
     {r, b} = decode_id(b)
     {{l, r}, b}
   end
 
-  defp decode_event(<<0 :: [size(1)], 0 :: [size(2)], b :: bits>>) do
+  defp decode_event(<<0 :: 1, 0 :: 2, b :: bits>>) do
     {r, b} = decode_event(b)
     {{0, 0, r}, b}
   end
-  defp decode_event(<<0 :: [size(1)], 1 :: [size(2)], b :: bits>>) do
+  defp decode_event(<<0 :: 1, 1 :: 2, b :: bits>>) do
     {l, b} = decode_event(b)
     {{0, l, 0}, b}
   end
-  defp decode_event(<<0 :: [size(1)], 2 :: [size(2)], b :: bits>>) do
+  defp decode_event(<<0 :: 1, 2 :: 2, b :: bits>>) do
     {l, b} = decode_event(b)
     {r, b} = decode_event(b)
     {{0, l, r}, b}
   end
-  defp decode_event(<<0 :: [size(1)], 3 :: [size(2)],
-                      0 :: [size(1)], 0 :: [size(1)], b :: bits>>) do
+  defp decode_event(<<0 :: 1, 3 :: 2, 0 :: 1, 0 :: 1, b :: bits>>) do
     {n, b} = decode_event(b)
     {r, b} = decode_event(b)
     {{n, 0, r}, b}
   end
-  defp decode_event(<<0 :: [size(1)], 3 :: [size(2)],
-                      0 :: [size(1)], 1 :: [size(1)], b :: bits>>) do
+  defp decode_event(<<0 :: 1, 3 :: 2, 0 :: 1, 1 :: 1, b :: bits>>) do
     {n, b} = decode_event(b)
     {l, b} = decode_event(b)
     {{n, l, 0}, b}
   end
-  defp decode_event(<<0 :: [size(1)], 3 :: [size(2)],
-                      1 :: [size(1)], b :: bits>>) do
+  defp decode_event(<<0 :: 1, 3 :: 2, 1 :: 1, b :: bits>>) do
     {n, b} = decode_event(b)
     {l, b} = decode_event(b)
     {r, b} = decode_event(b)
     {{n, l, r}, b}
   end
-  defp decode_event(<<1 :: [size(1)], b :: bits>>), do: decode_number(b, 2, 0)
+  defp decode_event(<<1 :: 1, b :: bits>>), do: decode_number(b, 2, 0)
 
-  defp decode_number(<<0 :: [size(1)], r :: bits>>, b, acc) do
+  defp decode_number(<<0 :: 1, r :: bits>>, b, acc) do
     <<n :: [size(b)], r :: bits>> = r
     {n + acc, r}
   end
-  defp decode_number(<<1 :: [size(1)], r :: bits>>, b, acc) do
+  defp decode_number(<<1 :: 1, r :: bits>>, b, acc) do
     decode_number(r, b + 1, acc + (1 <<< b))
   end
 
