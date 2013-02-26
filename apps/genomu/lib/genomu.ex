@@ -27,8 +27,6 @@ defmodule Genomu do
     :ok = Application.start(:genomu)
   end
 
-  @type command   :: {:set, operation} |
-                     {:apply, operation} |
-                     {:get, operation}
+  @type command   :: Genomu.Command.t
 
 end

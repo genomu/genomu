@@ -111,7 +111,8 @@ defmodule Genomu.Channel do
     clock = next_clock(state.clock, cmd)
     cell = {key, state.lookup(key)}
     revision = ITC.encode_binary(clock)
-    coord_options = [cell: cell, command: cmd, revision: revision] |> 
+    cmd = cmd.update(cell: cell, new_revision: revision)
+    coord_options = [for: cmd] |>
                     Keyword.merge(options)
     result = Genomu.Coordinator.run(coord_options)
     state = memoize(key, cmd, clock, state)
@@ -121,6 +122,8 @@ defmodule Genomu.Channel do
   @spec commit(pid | atom) :: :ok | {:error, reason :: term}
   defcall commit, state: State[parent: parent, clock: clock, log: log] = state do
     clock = sync(parent, clock)
+    txn = Genomu.Transaction.new(clock: clock, log: Enuclock.reverse(log))
+    Genomu.Transaction.Coordinator.run(transaction: txn)
     update(parent, self, clock)
     {:reply, :ok, state.clock(clock)}
   end
@@ -131,11 +134,11 @@ defmodule Genomu.Channel do
   end
 
   @spec next_clock(ITC.t, Genomu.command) :: ITC.t
-  defp next_clock(clock, {:get, _}), do: clock
+  defp next_clock(clock, Genomu.Command[type: :get]), do: clock
   defp next_clock(clock, _), do: ITC.event(clock)
 
   @spec memoize(Genomu.key, Genomu.command, ITC.t, State.t) :: State.t
-  defp memoize(_key, {:get, _}, _clock, state) do
+  defp memoize(_key, Genomu.Command[type: :get], _clock, state) do
     state
   end
   defp memoize(key, _cmd, clock, State[] = state) do
