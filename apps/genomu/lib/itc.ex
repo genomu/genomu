@@ -220,24 +220,24 @@ defmodule ITC do
 
   @spec decode(binary) :: t
   def decode(b) do
-    {i, b} = decode_id(b)
+    {i, b} = decode_interval(b)
     {e, _} = decode_event(b)
     {i, e}
   end
 
-  defp decode_id(<<0 :: 2, 0 :: 1, b :: bits>>), do: {0, b}
-  defp decode_id(<<0 :: 2, 1 :: 1, b :: bits>>), do: {1, b}
-  defp decode_id(<<1 :: 2, b :: bits>>) do
-    {i, b} = decode_id(b)
+  defp decode_interval(<<0 :: 2, 0 :: 1, b :: bits>>), do: {0, b}
+  defp decode_interval(<<0 :: 2, 1 :: 1, b :: bits>>), do: {1, b}
+  defp decode_interval(<<1 :: 2, b :: bits>>) do
+    {i, b} = decode_interval(b)
     {{0, i}, b}
   end
-  defp decode_id(<<2 :: 2, b :: bits>>) do
-    {i, b} = decode_id(b)
+  defp decode_interval(<<2 :: 2, b :: bits>>) do
+    {i, b} = decode_interval(b)
     {{i, 0}, b}
   end
-  defp decode_id(<<3 :: 2, b :: bits>>) do
-    {l, b} = decode_id(b)
-    {r, b} = decode_id(b)
+  defp decode_interval(<<3 :: 2, b :: bits>>) do
+    {l, b} = decode_interval(b)
+    {r, b} = decode_interval(b)
     {{l, r}, b}
   end
 
