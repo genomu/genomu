@@ -10,11 +10,14 @@ defmodule Genomu.Mixfile do
     ]
   end
 
+  def version, do: "0.1"
+
   def application do
     [applications: [:exlager, :xup, :genx, :exmsgpack,
                     :mochiweb, :compiler, :syntax_tools, ## riak_core
                    ] ++ env_applications(Mix.env),
      included_applications: [:riak_core],
+     version: version,
      mod: {Genomu.App, []},
     ]
   end
@@ -41,6 +44,7 @@ defmodule Genomu.Mixfile do
        {:poolboy,     github: "devinus/poolboy"},
      {:properex,      github: "yrashk/properex"},
      {:exconfig,      github: "yrashk/exconfig"},
+     {:jsx,           github: "talentdeficit/jsx"},
     ]
   end
 

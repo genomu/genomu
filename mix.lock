@@ -6,6 +6,7 @@
   "exreloader": {:git,"https://github.com/yrashk/exreloader.git","0698218d917d731a267be929fcfac07782b5a74c",[]},
   "folsom": {:git,"https://github.com/boundary/folsom.git","f694abf41030c0612b5777a42a8d60d2b78f5f47",[]},
   "genx": {:git,"https://github.com/yrashk/genx.git","85fc66c93e5e5711635e5d031a4031538b295ce0",[]},
+  "jsx": {:git,"https://github.com/talentdeficit/jsx.git","cb14b92a228e51f7bdcaa7eb17f035e4a5c0b47d",[]},
   "lager": {:git,"https://github.com/basho/lager.git","7986ec43a15172e738d8d734b4c2db494de0dde7",[]},
   "meck": {:git,"https://github.com/eproxus/meck.git","d6230ae6acabfebaebf18fb08281659d1794ce2c",[]},
   "mochiweb": {:git,"https://github.com/basho/mochiweb.git","2984b7419d5900036fb120d810d80700ae2b89e2",[tag: "1.5.1-riak-1.0.x-fixes"]},

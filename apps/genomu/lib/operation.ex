@@ -12,7 +12,7 @@ defmodule Genomu.Operation do
   @spec serialize(t) :: serialized
   def serialize({module, operation, argument}) do
     module_id = Genomu.Module.id(module)
-    operation_id = Genomu.Module.operation(module, operation)[:id]
+    operation_id = Genomu.Module.operation(module, {:name, operation})[:id]
     [MsgPack.pack(module_id),
      MsgPack.pack(operation_id),
      MsgPack.pack(argument)] |> iolist_to_binary
