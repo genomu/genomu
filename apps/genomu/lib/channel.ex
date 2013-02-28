@@ -28,12 +28,6 @@ defmodule Genomu.Channel do
                 snapshot: nil | :ets.tid, log: [Genomu.Transaction.entry],
                 children: nil | :ets.tid
 
-    def blank(opts) do
-      snapshot = :ets.new(__MODULE__.Snapshot, [:ordered_set])
-      children = :ets.new(__MODULE__.Children, [:ordered_set])
-      new(Keyword.merge([snapshot: snapshot, children: children], opts))
-    end
-
     @spec memoize(Genomu.key, t) :: t
     def memoize(key, __MODULE__[snapshot: snapshot, clock: clock, log: log] = state) do
       :ets.insert(snapshot, {key, clock})
@@ -51,7 +45,7 @@ defmodule Genomu.Channel do
   end
 
   def init({root, parent, clock}) do
-    {:ok, State.blank(root: root, parent: parent, clock: clock)}
+    {:ok, State.new(root: root, parent: parent, clock: clock)}
   end
 
   @spec clock(pid | atom) :: ITC.t
@@ -68,12 +62,15 @@ defmodule Genomu.Channel do
   @spec fork(pid | atom, root :: atom | boolean) :: ITC.t
   def fork(server), do: fork(server, false)
 
-  defcall fork(root), state: State[clock: clock, children: c] = state do
+  defcall fork(root), state: State[clock: clock] = state do
+    state = ensure_children(state)
+
     {new_clock, channel_clock} = ITC.fork(clock)
     {:ok, channel} = :supervisor.start_child(Genomu.Sup.Channels, [root, self, channel_clock])
     Process.monitor(channel)
-    :ets.insert(c, [{channel, channel_clock},
-                    {channel_clock, channel}])
+    :ets.insert(state.children,
+                [{channel, channel_clock},
+                 {channel_clock, channel}])
     state = state.clock(new_clock)
     {:reply, {:ok, channel}, state}
   end
@@ -108,6 +105,8 @@ defmodule Genomu.Channel do
 
   @spec execute(pid, Genomu.key, Genomu.command, Keyword.t) :: term
   defcall execute(key, cmd, options), state: State[] = state do
+    state = ensure_snapshot(state)
+
     clock = next_clock(state.clock, cmd)
     cell = {key, state.lookup(key)}
     revision = ITC.encode_binary(clock)
@@ -144,5 +143,20 @@ defmodule Genomu.Channel do
   defp memoize(key, _cmd, clock, State[] = state) do
     state.clock(clock).memoize(key)
   end
+
+  defp ensure_snapshot(State[snapshot: nil] = state) do
+    state.snapshot(:ets.new(__MODULE__.Snapshot, [:ordered_set]))
+  end
+  defp ensure_snapshot(State[] = state) do
+    state
+  end
+
+  defp ensure_children(State[children: nil] = state) do
+    state.children(:ets.new(__MODULE__.Children, [:ordered_set]))
+  end
+  defp ensure_children(State[] = state) do
+    state
+  end
+
 
 end
