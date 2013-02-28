@@ -3,14 +3,14 @@ defmodule Genomu.Mixfile do
 
   def project do
     [ app:       :genomu,
-      version:   vsn,
+      version:   version,
       deps:      deps,
       deps_path: Path.join(root, "deps"),
       lockfile:  Path.join(root, "mix.lock"),
     ]
   end
 
-  def version, do: "0.1"
+  def version, do: Regex.replace(%r/[\n\r]/,File.read!(Path.expand("../../../VERSION", __FILE__)),"")
 
   def application do
     [applications: [:exlager, :xup, :genx, :exmsgpack,
@@ -45,6 +45,7 @@ defmodule Genomu.Mixfile do
      {:properex,      github: "yrashk/properex"},
      {:exconfig,      github: "yrashk/exconfig"},
      {:jsx,           github: "talentdeficit/jsx"},
+     {:relex,         github: "yrashk/relex"},
     ]
   end
 
@@ -52,7 +53,4 @@ defmodule Genomu.Mixfile do
     Path.join([Path.dirname(__FILE__), "..", ".."]) |> Path.expand
   end
 
-  defp vsn do
-    System.cmd("git describe --always --tags") |> String.strip
-  end
 end
