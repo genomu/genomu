@@ -15,6 +15,8 @@
                      Genomu.Coordinator.ref}
    @type commit :: {:C, ITC.t, binary, [Genomu.Transaction.entry], Genomu.Coordinator.ref}
 
+   @nil_value MsgPack.pack(nil)
+
    require Lager
 
    defrecord State, partition: nil,
@@ -46,11 +48,21 @@
      {value, rev} = lookup_cell(cell, state)
      case cmd do
        {cmd_name, operation} when cmd_name in [:apply, :set] ->
-         new_value = Genomu.Operation.apply(operation, value)
-         serialized = Genomu.Operation.serialize(operation)
-         stage({key, new_rev}, serialized, new_value, state)
+         case apply_operation(operation, value) do
+           :error -> 
+             new_rev = rev
+             new_value = @nil_value
+           new_value ->  
+            serialized = Genomu.Operation.serialize(operation)
+            stage({key, new_rev}, serialized, new_value, state)
+         end
        {:get = cmd_name, operation} ->
-         new_value = Genomu.Operation.apply(operation, value)
+         case apply_operation(operation, value) do
+           :error ->
+             new_value = @nil_value
+           new_value ->
+             :ok
+         end
      end
      case cmd_name do
        :apply ->
@@ -129,8 +141,6 @@
    def terminate(_, State[]) do
    end
 
-   @nil_value MsgPack.pack(nil)
-
    @spec lookup_cell(Genomu.cell, State.t) :: term | nil
    defp lookup_cell({key, nil}, State[tab: tab]) do
      case ETS.lookup(tab, key) do
@@ -149,6 +159,15 @@
    defp stage(cell, serialized, value, State[staging_tab: tab] = state) do
      ETS.insert(tab, {cell, {value, serialized}})
      state
+   end
+
+   defp apply_operation(operation, value) do
+     try do
+       Genomu.Operation.apply(operation, value)
+     catch type, msg -> 
+       Lager.error "Error #{inspect {type, msg}} occurred while processing operation #{inspect operation} on #{inspect value}"
+       :error
+     end
    end
 
  end
