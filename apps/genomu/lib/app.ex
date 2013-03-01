@@ -31,6 +31,7 @@ defmodule Genomu.App do
   def start(_, _) do
     env = Application.environment(:genomu)
     pid_file = env[:pid_file]
+    File.mkdir_p(Path.dirname(pid_file))
     File.write!(pid_file, System.get_pid)
     case Genomu.Sup.start_link do
       {:ok, pid} ->
