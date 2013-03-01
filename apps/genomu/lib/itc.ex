@@ -288,4 +288,28 @@ defmodule ITC do
     << encoded :: bitstring, 0 :: size(padding) >>
   end
 
+  @spec encode_string(t) :: String.t
+  def encode_string(t) do
+    bc <<b>> inbits encode_binary(t), do: <<(integer_to_binary(b,16))::binary>>
+  end
+
+  @spec to_string(t) :: String.t
+  def to_string({i,e}) do
+    iolist_to_binary [to_string_i(i), to_string_e(e)]
+  end
+
+  @spec to_string_i(interval) :: iolist
+  defp to_string_i(0), do: "0"
+  defp to_string_i(1), do: ""
+  defp to_string_i({0, i}), do: ["r", to_string_i(i)]
+  defp to_string_i({i, 0}), do: ["l", to_string_i(i)]
+  defp to_string_i({l,r}), do: ["(l", to_string_i(l), "+", "r", to_string_i(r),")"]
+
+  @spec to_string_e(events) :: iolist
+  defp to_string_e({n, l, 0}), do: [to_string_e(n), "l", to_string_e(l)]
+  defp to_string_e({n, 0, r}), do: [to_string_e(n), "r", to_string_e(r)]
+  defp to_string_e({n, l, r}), do: [to_string_e(n), "(l", to_string_e(l), "+r", to_string_e(r),")"]
+  defp to_string_e(n) when n > 0, do: integer_to_binary(n)
+  defp to_string_e(_), do: ""
+
 end
