@@ -11,11 +11,14 @@ defmodule Genomu.Config do
   defproperty log_dir, default: "log"
   @shortdoc "Suppresses console logging if true"
   defproperty quiet_mode, default: false
+  @shortdoc "HTTP interface port"
+  defproperty http_port, default: 9119
 
   def sys_config(config) do
     [
      genomu: [
        data_dir: Path.join(config.data_dir, to_binary(config.instance_name)),
+       http_port: config.http_port
      ],
      riak_core: [
        ring_state_dir: to_char_list(Path.join([config.data_dir, to_binary(config.instance_name), "ring"])),

@@ -27,6 +27,11 @@ defmodule Genomu do
     :ok = Application.start(:genomu)
   end
 
+  def system_version do
+    {:ok, keys} = :application.get_all_key(:genomu)
+    keys[:vsn] |> to_binary
+  end
+
   @type command   :: Genomu.Command.t
 
 end

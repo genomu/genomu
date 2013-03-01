@@ -15,6 +15,9 @@ defmodule Genomu.Mixfile do
   def application do
     [applications: [:exlager, :xup, :genx, :exmsgpack,
                     :mochiweb, :compiler, :syntax_tools, ## riak_core
+                    :jsx,
+                    :cowboy, :ranch,
+                    :hackney,
                    ] ++ env_applications(Mix.env),
      included_applications: [:riak_core],
      version: version,
@@ -45,7 +48,10 @@ defmodule Genomu.Mixfile do
      {:properex,      github: "yrashk/properex"},
      {:exconfig,      github: "yrashk/exconfig"},
      {:jsx,           github: "talentdeficit/jsx"},
-     {:relex,         github: "yrashk/relex"},
+     {:cowboy,        github: "extend/cowboy"},
+       {:ranch,       github: "extend/ranch", tag: "0.6.1"},
+     {:hackney,       github: "benoitc/hackney"},
+       {:mimetypes,   github: "spawngrid/mimetypes"},
     ]
   end
 
