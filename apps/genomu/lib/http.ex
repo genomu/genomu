@@ -9,7 +9,7 @@ defmodule Genomu.HTTP do
     dispatch = [
       {:_, [
         {"/instance", Genomu.HTTP.Instance, []},
-        {"/cluster/membership", Genomu.HTTP.Cluster, []},
+        {"/cluster/membership[/staging]", Genomu.HTTP.Cluster, []},
       ]},
     ] |> :cowboy_router.compile
 

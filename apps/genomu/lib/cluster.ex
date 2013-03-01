@@ -4,7 +4,7 @@ defmodule Genomu.Cluster do
     :riak_core_ring.all_members my_ring
   end
 
-  defp my_ring do
+  def my_ring do
     {:ok, ring} = :riak_core_ring_manager.get_my_ring
     ring
   end
@@ -25,7 +25,7 @@ defmodule Genomu.Cluster do
   end
 
   def join(node) when is_atom(node) do
-    :riak_core.join(node)
+    :riak_core.staged_join(atom_to_list(node))
   end
 
 end
