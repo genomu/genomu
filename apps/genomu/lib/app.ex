@@ -29,6 +29,9 @@ defmodule Genomu.App do
   use Application.Behaviour
 
   def start(_, _) do
+    env = Application.environment(:genomu)
+    pid_file = env[:pid_file]
+    File.write!(pid_file, System.get_pid)
     case Genomu.Sup.start_link do
       {:ok, pid} ->
         {:ok, _} = Genomu.HTTP.start
@@ -38,6 +41,12 @@ defmodule Genomu.App do
         {:ok, pid}
       other -> other
     end
+  end
+
+  def stop(_) do
+    env = Application.environment(:genomu)
+    pid_file = env[:pid_file]
+    File.rm pid_file
   end
 
   defp setup_modules do

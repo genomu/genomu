@@ -21,6 +21,10 @@ start: all
 	@ulimit -n 4096 && ERL_LIBS=apps:deps elixir --sname genomu2 --erl "-config test/sys.2 -s Elixir-Genomu" --no-halt &
 	@ulimit -n 4096 && ERL_LIBS=apps:deps elixir --sname genomu3 --erl "-config test/sys.3 -s Elixir-Genomu" --no-halt &
 
+stop:
+	@kill -9 `cat data/spawn1/genomu.pid` `cat data/spawn2/genomu.pid` `cat data/spawn3/genomu.pid`
+	@rm -f data/spawn1/genomu.pid data/spawn2/genomu.pid data/spawn3/genomu.pid
+
 remsh1:
 	ERL_LIBS=apps:deps iex --sname genomu_remsh --remsh genomu1@$(shell hostname | awk -F. '{print $$1;}')
 
