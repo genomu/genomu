@@ -4,7 +4,7 @@ defmodule Genomu.Channel do
 
   @spec start :: {:ok, pid} | {:error, reason :: term}
   def start do
-    Genomu.Channel.fork Genomu.Interval.Root
+    Genomu.Channel.fork Genomu.Channel.Root
   end
 
   @spec start_link(root :: atom | boolean, parent :: nil | pid | atom, interval :: ITC.t) :: {:ok, pid} | {:error, reason :: term}

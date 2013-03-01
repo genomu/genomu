@@ -14,8 +14,8 @@ defsupervisor Genomu.Sup do
            module: Genomu.Coordinator
   end
 
-  worker id: Genomu.Interval.Root,
-         module: Genomu.Channel, args: [Genomu.Interval.Root, nil, ITC.seed],
+  worker id: Genomu.Channel.Root,
+         module: Genomu.Channel, args: [Genomu.Channel.Root, nil, ITC.seed],
          restart: :permanent
 
   supervisor Channels, strategy: :simple_one_for_one do
