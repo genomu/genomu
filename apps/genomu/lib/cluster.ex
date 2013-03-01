@@ -25,7 +25,7 @@ defmodule Genomu.Cluster do
   end
 
   def join(node) when is_atom(node) do
-    :riak_core.staged_join(atom_to_list(node))
+    :riak_core.staged_join(node)
   end
 
 end
