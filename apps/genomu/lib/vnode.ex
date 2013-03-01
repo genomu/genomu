@@ -97,6 +97,12 @@
          {:stop, term, State.t} |
          {:forward, State.t} |
          {:drop, State.t}
+   def handle_handoff_command({:riak_core_fold_req_v1, foldfun, acc0}, _sender, 
+                              State[tab: tab, staging_tab: staging] = state) do
+     acc = ETS.foldl(fn({k,v}, a) -> foldfun.(k, v, a) end, acc0, tab)
+     acc = ETS.foldl(fn({k,v}, a) -> foldfun.(k, v, a) end, acc, staging)
+     {:reply, acc, state}
+   end         
    def handle_handoff_command(_, _sender, State[] = state) do
      {:forward, state}
    end
