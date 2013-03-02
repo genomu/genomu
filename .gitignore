@@ -4,3 +4,4 @@ ebin
 /log
 /sys.config
 /apps/genomu/priv/modules
+/test/sys.*.config
