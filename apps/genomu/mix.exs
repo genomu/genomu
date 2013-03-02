@@ -14,7 +14,7 @@ defmodule Genomu.Mixfile do
 
   def application do
     [applications: [:exlager, :xup, :genx, :exmsgpack,
-                    :mochiweb, :compiler, :syntax_tools, ## riak_core
+                    :compiler, :syntax_tools, ## riak_core
                     :jsx,
                     :cowboy, :ranch,
                     :hackney,
@@ -35,12 +35,11 @@ defmodule Genomu.Mixfile do
      {:exmsgpack,     github: "yrashk/exmsgpack"},
      {:exlager,       github: "khia/exlager"},
      {:exreloader,    github: "yrashk/exreloader"},
-     {:riak_core,     github: "basho/riak_core"},
+     {:riak_core,     github: "basho/riak_core",
+                      compile: "sh -c '#{root}/patches/riak_core_build.sh #{root}'"},
        {:protobuffs,  github: "basho/erlang_protobuffs"},
        {:basho_stats, github: "basho/basho_stats"},
        {:riak_sysmon, github: "basho/riak_sysmon"},
-       {:webmachine,  github: "basho/webmachine"},
-         {:mochiweb,  github: "basho/mochiweb", tag: "1.5.1-riak-1.0.x-fixes"},
        {:folsom,      github: "boundary/folsom"},
          {:bear,      github: "boundary/bear", tag: "0.1.1"},
          {:meck,      github: "eproxus/meck"},
