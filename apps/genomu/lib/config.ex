@@ -13,6 +13,8 @@ defmodule Genomu.Config do
   defproperty quiet_mode, default: false
   @shortdoc "HTTP interface port"
   defproperty http_port, default: 9119
+  @shortdoc "Host name"
+  defproperty hostname
   @shortdoc "PID file path"
   defproperty pid_file
 
@@ -21,7 +23,8 @@ defmodule Genomu.Config do
      genomu: [
        data_dir: Path.join(config.data_dir, to_binary(config.instance_name)),
        http_port: config.http_port,
-       pid_file: config.pid_file || Path.join([config.data_dir, to_binary(config.instance_name), "genomu.pid"]) 
+       pid_file: config.pid_file || Path.join([config.data_dir, to_binary(config.instance_name), "genomu.pid"]),
+       hostname: config.hostname
      ],
      riak_core: [
        ring_state_dir: to_char_list(Path.join([config.data_dir, to_binary(config.instance_name), "ring"])),

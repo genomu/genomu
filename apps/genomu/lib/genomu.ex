@@ -32,6 +32,13 @@ defmodule Genomu do
     keys[:vsn] |> to_binary
   end
 
+  def instance_url do
+    env = Application.environment(:genomu)
+    hostname = env[:hostname] || "localhost"
+    port = env[:http_port] || 9119
+    "http://#{hostname}:#{port}"
+  end
+
   @type command   :: Genomu.Command.t
 
 end

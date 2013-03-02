@@ -58,9 +58,12 @@ defmodule Genomu.HTTP.Cluster do
   end
 
   def to_json("/cluster/membership", req, state) do
-    json = [nodes: Enum.map(Genomu.Cluster.all_members, to_binary(&1)),
+    json = [instances: Enum.map(Genomu.Cluster.all_members,
+                       fn(node) ->
+                         :rpc.call(node, Genomu, :instance_url, [])
+                       end),
             established: not Genomu.Cluster.only_member?]
-    {json |> :jsx.to_json, req, state}  
+    {json |> :jsx.to_json, req, state}
   end
 
   def to_json("/cluster/membership/staging", req, state) do
