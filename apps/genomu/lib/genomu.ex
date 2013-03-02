@@ -20,6 +20,10 @@ defmodule Genomu do
   @type revision  :: binary
   @type cell      :: {key, revision}
 
+  ## Internal types
+  @type gen_server_ref  :: pid | atom | {atom, node} | {:global, atom} |
+                           {:via, module, atom}
+
   @doc """
   Starts the application
   """

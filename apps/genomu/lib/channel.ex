@@ -7,7 +7,7 @@ defmodule Genomu.Channel do
     Genomu.Channel.fork Genomu.Channel.Root
   end
 
-  @spec start_link(root :: atom | boolean, parent :: nil | pid | atom, interval :: ITC.t) :: {:ok, pid} | {:error, reason :: term}
+  @spec start_link(root :: atom | boolean, parent :: nil | Genomu.gen_server_ref, interval :: ITC.t) :: {:ok, pid} | {:error, reason :: term}
   def start_link(false, parent, clock) do
     :gen_server.start_link(__MODULE__, {false, parent, clock}, [])
   end
@@ -23,7 +23,7 @@ defmodule Genomu.Channel do
                    snapshot: nil, log: [],
                    children: nil do
 
-    record_type root: boolean, parent: nil | pid | atom,
+    record_type root: boolean, parent: nil | Genomu.gen_server_ref,
                 clock: nil | ITC.t,
                 snapshot: nil | :ets.tid, log: [Genomu.Transaction.entry],
                 children: nil | :ets.tid
@@ -48,18 +48,18 @@ defmodule Genomu.Channel do
     {:ok, State.new(root: root, parent: parent, clock: clock)}
   end
 
-  @spec clock(pid | atom) :: ITC.t
+  @spec clock(Genomu.gen_server_ref) :: ITC.t
   defcall clock, state: State[clock: clock] = state do
     {:reply, clock, state}
   end
 
-  @spec root?(pid | atom) :: boolean
+  @spec root?(Genomu.gen_server_ref) :: boolean
   defcall root?, state: State[root: root] = state do
     {:reply, root, state}
   end
 
-  @spec fork(pid | atom) :: ITC.t
-  @spec fork(pid | atom, root :: atom | boolean) :: ITC.t
+  @spec fork(Genomu.gen_server_ref) :: {:ok, pid}
+  @spec fork(Genomu.gen_server_ref, root :: atom | boolean) :: {:ok, pid}
   def fork(server), do: fork(server, false)
 
   defcall fork(root), state: State[clock: clock] = state do
@@ -75,12 +75,26 @@ defmodule Genomu.Channel do
     {:reply, {:ok, channel}, state}
   end
 
-  @spec sync(pid | atom, ITC.t) :: ITC.t
+  @spec fork_root(Genomu.gen_server_ref) :: ITC.t
+  defcall fork_root, state: State[clock: clock] = state do
+    {new_clock, fork_clock} = ITC.fork(clock)
+    state = state.clock(new_clock)
+    {:reply, fork_clock, state}
+  end
+
+  @spec sync(Genomu.gen_server_ref, ITC.t) :: ITC.t
   defcall sync(clock0), state: State[clock: clock] = state do
     new_clock = ITC.join(clock, clock0)
     {clock1, clock2} = ITC.fork(new_clock)
     {:reply, clock2, state.clock(clock1)}
   end
+
+  @spec sync_with(server :: Genomu.gen_server_ref, sync_with :: Genomu.gen_server_ref) :: :ok
+  defcall sync_with(sync_with), state: State[] = state do
+    clock = fork_root(sync_with)
+    {:reply, :ok, state.update(clock: clock, parent: sync_with)}
+  end
+
 
   defcast update(channel, new_clock), state: State[children: c] = state do
     case :ets.lookup(c, channel) do
@@ -118,7 +132,7 @@ defmodule Genomu.Channel do
     {:reply, result, state}
   end
 
-  @spec commit(pid | atom) :: :ok | {:error, reason :: term}
+  @spec commit(Genomu.gen_server_ref) :: :ok | {:error, reason :: term}
   defcall commit, state: State[parent: parent, clock: clock, log: log] = state do
     clock = sync(parent, clock)
     txn = Genomu.Transaction.new(clock: clock, log: Enum.reverse(log))
@@ -127,7 +141,7 @@ defmodule Genomu.Channel do
     {:reply, :ok, state.clock(clock)}
   end
 
-  @spec stop(pid | atom) :: :ok
+  @spec stop(Genomu.gen_server_ref) :: :ok
   defcast stop, state: state do
     {:stop, :normal, state}
   end
