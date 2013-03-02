@@ -1,4 +1,4 @@
- defmodule Genomu.VNode do
+defmodule Genomu.VNode do
    @behaviour :riak_core_vnode
    alias :riak_core_vnode_master, as: Master
    alias :riak_core_vnode, as: VNode
@@ -15,6 +15,8 @@
                      Genomu.Coordinator.ref}
    @type commit :: {:C, ITC.t, binary, [Genomu.Transaction.entry], Genomu.Coordinator.ref}
 
+   @typep fold_req :: {:riak_core_fold_req_v1, ((term, term) -> term), term}
+
    @nil_value MsgPack.pack(nil)
 
    require Lager
@@ -25,7 +27,7 @@
                     tab: :ets.tid, staging_tab: :ets.tid
    end
 
-   @spec start_vnode(non_neg_integer) :: {:ok, pid}
+   @spec start_vnode(integer | [integer]) :: {:ok, pid}
    def start_vnode(partition) do
      Master.get_vnode_pid(partition, __MODULE__)
    end
@@ -38,11 +40,19 @@
      {:ok, State.new(partition: partition, tab: tab, staging_tab: staging_tab)}
    end
 
-   @spec handle_command(command | commit, sender, State.t) ::
+   @spec handle_command(fold_req | command | commit, sender, State.t) ::
          {:reply, term, State.t} |
          {:noreply, State.t} |
          {:async, sender, term, State.t} |
          {:stop, term, State.t}
+
+   def handle_command({:riak_core_fold_req_v1, foldfun, acc0}, _sender, 
+                              State[tab: tab, staging_tab: staging] = state) do
+     acc = ETS.foldl(fn({k,v}, a) -> foldfun.(k, v, a) end, acc0, tab)
+     acc = ETS.foldl(fn({k,v}, a) -> foldfun.(k, v, a) end, acc, staging)
+     {:reply, acc, state}
+   end         
+
    def handle_command({{key, _rev} = cell, new_rev, cmd, ref}, sender,
                       State[] = state) do
      {value, rev} = lookup_cell(cell, state)
@@ -97,12 +107,9 @@
          {:stop, term, State.t} |
          {:forward, State.t} |
          {:drop, State.t}
-   def handle_handoff_command({:riak_core_fold_req_v1, foldfun, acc0}, _sender, 
-                              State[tab: tab, staging_tab: staging] = state) do
-     acc = ETS.foldl(fn({k,v}, a) -> foldfun.(k, v, a) end, acc0, tab)
-     acc = ETS.foldl(fn({k,v}, a) -> foldfun.(k, v, a) end, acc, staging)
-     {:reply, acc, state}
-   end         
+   def handle_handoff_command({:riak_core_fold_req_v1, _, _} = fold_req, sender, state) do
+     handle_command(fold_req, sender, state)
+   end
    def handle_handoff_command(_, _sender, State[] = state) do
      {:forward, state}
    end

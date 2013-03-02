@@ -36,7 +36,7 @@ defmodule Genomu.App do
     case Genomu.Sup.start_link do
       {:ok, pid} ->
         {:ok, _} = Genomu.HTTP.start
-        :ok = :riak_core.register(:genomu, [{:vnode_module, Genomu.VNode}])
+        :ok = :riak_core.register(Genomu.VNode, [{:vnode_module, Genomu.VNode}])
         :ok = :riak_core_node_watcher.service_up(Genomu.VNode, pid)
         setup_modules
         {:ok, pid}
