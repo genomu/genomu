@@ -1,5 +1,7 @@
 defmodule Genomu.HTTP.Cluster do
 
+  use Genomu.HTTP.Resource
+
   def init(_transport, _req, []) do
     {:upgrade, :protocol, :cowboy_rest}
   end
@@ -63,7 +65,7 @@ defmodule Genomu.HTTP.Cluster do
                          :rpc.call(node, Genomu, :instance_url, [])
                        end),
             established: not Genomu.Cluster.only_member?]
-    {json |> :jsx.to_json, req, state}
+    {json |> maybe_jsonp(req), req, state}
   end
 
   def to_json("/cluster/membership/staging", req, state) do
@@ -81,7 +83,7 @@ defmodule Genomu.HTTP.Cluster do
         end
         json = [status: "ready", plan: plan(changes, next_rings)]
     end
-    {json |> :jsx.to_json, req, state}
+    {json |> maybe_jsonp(req), req, state}
   end
 
   defp plan(changes, next_rings) do

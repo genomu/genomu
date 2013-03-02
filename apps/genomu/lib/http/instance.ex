@@ -1,5 +1,7 @@
 defmodule Genomu.HTTP.Instance do
 
+  use Genomu.HTTP.Resource
+
   def init(_transport, _req, []) do
     {:upgrade, :protocol, :cowboy_rest}
   end
@@ -12,7 +14,7 @@ defmodule Genomu.HTTP.Instance do
     json = [root_channel: Genomu.Channel.clock(Genomu.Channel.Root) |> ITC.to_string,
             system_version: Genomu.system_version,
             node: node |> to_binary]
-    {json |> :jsx.to_json, req, state}
+    {json |> maybe_jsonp(req), req, state}
   end
 
 end
