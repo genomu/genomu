@@ -68,7 +68,7 @@ defmodule Genomu.HTTP.Cluster do
   def to_json("/cluster/membership/staging", req, state) do
     case :riak_core_claimant.plan do
       {:error, :ring_not_ready} ->
-        json = [status: "ring_not_ready", plan: [{}]]
+        json = [status: "ring_not_ready", plan: plan([], [])]
       {:ok, changes, next_rings} ->
         # From riak_core:
         #   The last next ring is always the final ring after all changes,
