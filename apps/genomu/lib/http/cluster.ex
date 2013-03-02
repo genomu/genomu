@@ -60,10 +60,7 @@ defmodule Genomu.HTTP.Cluster do
   end
 
   def to_json("/cluster/membership", req, state) do
-    json = [instances: Enum.map(Genomu.Cluster.all_members,
-                       fn(node) ->
-                         :rpc.call(node, Genomu, :instance_url, [])
-                       end),
+    json = [instances: Enum.map(Genomu.Cluster.all_members, instance_url(&1)),
             established: not Genomu.Cluster.only_member?]
     {json |> maybe_jsonp(req), req, state}
   end
@@ -93,42 +90,46 @@ defmodule Genomu.HTTP.Cluster do
                 fn({_, :join}) -> true
                   (_) ->  false
                 end,
-                fn({node, :join}) -> node |> to_binary end)
+                fn({node, :join}) -> node end)
     leaves =
     Enum.filter_map(changes,
                 fn({_, :leave}) -> true
                   (_) ->  false
                 end,
-                fn({node, :leave}) -> node |> to_binary end)
+                fn({node, :leave}) -> node end)
 
     forced_removals =
     Enum.filter_map(changes,
                 fn({_, :force_remove}) -> true
                   (_) ->  false
                 end,
-                fn({node, :force_remove}) -> node |> to_binary end)
+                fn({node, :force_remove}) -> node end)
 
     replacements =
     Enum.filter_map(changes,
                 fn({_, {:replace, _}}) -> true
                   (_) ->  false
                 end,
-                fn({node, {:replace, new_node}}) -> [{node |> to_binary, new_node |> to_binary}] end)
+                fn({node, {:replace, new_node}}) -> [{node, new_node}] end)
 
     forced_replacements =
     Enum.filter_map(changes,
                 fn({_, {:force_replace, _}}) -> true
                   (_) ->  false
                 end,
-                fn({node, {:force_replace, new_node}}) -> [{node |> to_binary, new_node |> to_binary}] end)
+                fn({node, {:force_replace, new_node}}) -> [{node, new_node}] end)
 
 
     [transitions: length(next_rings),
-     joins: joins,
-     leaves: leaves,
-     forced_removals: forced_removals,
-     replacements: replacements,
-     forced_replacements: forced_replacements]
+     joins: Enum.map(joins, instance_url(&1)),
+     leaves: Enum.map(leaves, instance_url(&1)),
+     forced_removals: Enum.map(forced_removals, instance_url(&1)),
+     replacements: Enum.map(replacements, instance_url(&1)),
+     forced_replacements: Enum.map(forced_replacements, instance_url(&1))]
+  end
+
+  defp instance_url(node) do
+     :rpc.call(node, Genomu, :instance_url, [])
   end
 
 end
