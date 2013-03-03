@@ -17,7 +17,7 @@ defmodule Genomu.Cluster do
     :riak_core_ring.indices(my_ring, node)
   end
 
-  def next_indices(node) do
+  def future_indices(node) do
     :riak_core_ring.future_indices(my_ring, node)
   end
 

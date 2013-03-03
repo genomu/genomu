@@ -73,7 +73,7 @@ defmodule Genomu.HTTP.Cluster do
                                    node: node |> to_binary,
                                    status: status |> to_binary,
                                    indices: Genomu.Cluster.indices(node),
-                                   future_indices: Genomu.Cluster.indices(node),
+                                   future_indices: Genomu.Cluster.future_indices(node),
                                   ]
                                 end),
             established: not Genomu.Cluster.only_member?]
