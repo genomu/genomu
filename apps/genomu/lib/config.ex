@@ -17,6 +17,8 @@ defmodule Genomu.Config do
   defproperty hostname
   @shortdoc "PID file path"
   defproperty pid_file
+  @shortdoc "Cluster name"
+  defproperty cluster_name, default: "default"
 
   def sys_config(config) do
     [
@@ -29,7 +31,8 @@ defmodule Genomu.Config do
      riak_core: [
        ring_state_dir: to_char_list(Path.join([config.data_dir, to_binary(config.instance_name), "ring"])),
        vnode_modules: [{:genomu, Genomu.VNode}],
-       handoff_port: config.handoff_port
+       handoff_port: config.handoff_port,
+       cluster_name: to_char_list(config.cluster_name),
      ],
      lager:
        [handlers:
