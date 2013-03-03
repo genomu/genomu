@@ -1,7 +1,11 @@
 defmodule Genomu.Cluster do
-  
+
   def all_members do
-    :riak_core_ring.all_members my_ring
+    :riak_core_ring.all_members(my_ring)
+  end
+
+  def all_members_status do
+    :riak_core_ring.all_member_status(my_ring)
   end
 
   def my_ring do
@@ -9,8 +13,20 @@ defmodule Genomu.Cluster do
     ring
   end
 
+  def indices(node) do
+    :riak_core_ring.indices(my_ring, node)
+  end
+
+  def next_indices(node) do
+    :riak_core_ring.future_indices(my_ring, node)
+  end
+
   def only_member? do
     all_members == [node]
+  end
+
+  def num_partitions do
+    :riak_core_ring.num_partitions(my_ring)
   end
 
   def name do

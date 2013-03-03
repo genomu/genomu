@@ -60,12 +60,22 @@ defmodule Genomu.HTTP.Cluster do
   end
 
   def to_json("/cluster", req, state) do
-    json = [name: Genomu.Cluster.name]
+    json = [name: Genomu.Cluster.name,
+            num_partitions: Genomu.Cluster.num_partitions,
+    ]
     {json |> maybe_jsonp(req), req, state}
   end
 
   def to_json("/cluster/membership", req, state) do
-    json = [instances: Enum.map(Genomu.Cluster.all_members, instance_url(&1)),
+    json = [instances: Enum.map(Genomu.Cluster.all_members_status,
+                                fn({node, status}) ->
+                                  [url: instance_url(node),
+                                   node: node |> to_binary,
+                                   status: status |> to_binary,
+                                   indices: Genomu.Cluster.indices(node),
+                                   future_indices: Genomu.Cluster.indices(node),
+                                  ]
+                                end),
             established: not Genomu.Cluster.only_member?]
     {json |> maybe_jsonp(req), req, state}
   end
