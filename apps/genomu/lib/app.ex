@@ -1,5 +1,5 @@
 import Xup
-defsupervisor Genomu.Sup do
+defsupervisor Genomu.Sup, name: {:local, :genomu_sup} do
 
   worker id: :riak_core_app,
          function: :start, args: [:undefined, :undefined],
@@ -35,9 +35,8 @@ defmodule Genomu.App do
     File.write!(pid_file, System.get_pid)
     case Genomu.Sup.start_link do
       {:ok, pid} ->
+        :ok = :riak_core.register(:genomu, [{:vnode_module, Genomu.VNode}])
         {:ok, _} = Genomu.HTTP.start
-        :ok = :riak_core.register(Genomu.VNode, [{:vnode_module, Genomu.VNode}])
-        :ok = :riak_core_node_watcher.service_up(Genomu.VNode, pid)
         setup_modules
         {:ok, pid}
       other -> other
