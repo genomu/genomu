@@ -59,6 +59,11 @@ defmodule Genomu.HTTP.Cluster do
     to_json(path, req, state)
   end
 
+  def to_json("/cluster", req, state) do
+    json = [name: Genomu.Cluster.name]
+    {json |> maybe_jsonp(req), req, state}
+  end
+
   def to_json("/cluster/membership", req, state) do
     json = [instances: Enum.map(Genomu.Cluster.all_members, instance_url(&1)),
             established: not Genomu.Cluster.only_member?]

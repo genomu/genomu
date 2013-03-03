@@ -9,12 +9,18 @@ defmodule Genomu.HTTP do
     dispatch = [
       {:_, [
         {"/instance", Genomu.HTTP.Instance, []},
-        {"/cluster/membership[/staging]", Genomu.HTTP.Cluster, []},
+        {"/cluster/[membership[/staging]]", Genomu.HTTP.Cluster, []},
       ]},
     ] |> :cowboy_router.compile
 
     {:ok, _} = :cowboy.start_http(:http, 100,
                                   [port: http_port],
                                   [env: [dispatch: dispatch]])
+  end
+
+  defp static do
+    [directory: {:priv_dir, :genomu, ["static"]},
+     mimetypes: {function(:mimetypes.path_to_mimes/2), :default}
+    ]
   end
 end

@@ -13,6 +13,10 @@ defmodule Genomu.Cluster do
     all_members == [node]
   end
 
+  def name do
+    Application.environment(:riak_core)[:cluster_name] |> to_binary
+  end
+
   def join(url) when is_binary(url) do
     {:ok, 200, _headers, client} =
       :hackney.request(:get, url <> "/instance", 

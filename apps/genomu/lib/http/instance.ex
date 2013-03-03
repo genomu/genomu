@@ -13,6 +13,7 @@ defmodule Genomu.HTTP.Instance do
   def to_json(req, state) do
     json = [root_channel: Genomu.Channel.clock(Genomu.Channel.Root) |> ITC.to_string,
             system_version: Genomu.system_version,
+            instance_url: Genomu.instance_url,
             node: node |> to_binary]
     {json |> maybe_jsonp(req), req, state}
   end
