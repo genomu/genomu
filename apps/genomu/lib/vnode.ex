@@ -49,7 +49,7 @@ defmodule Genomu.VNode do
    def handle_command({:riak_core_fold_req_v1, foldfun, acc0}, _sender, 
                               State[tab: tab, staging_tab: staging] = state) do
      acc = ETS.foldl(fn({k,v}, a) -> foldfun.(k, v, a) end, acc0, tab)
-     acc = ETS.foldl(fn({k,v}, a) -> foldfun.(k, v, a) end, acc, staging)
+     acc = ETS.foldl(fn({k,v}, a) -> foldfun.({:s, k}, v, a) end, acc, staging)
      {:reply, acc, state}
    end         
 
@@ -122,8 +122,12 @@ defmodule Genomu.VNode do
 
    def handoff_finished(_target, State[] = state), do: {:ok, state}
 
-   def handle_handoff_data(data, State[tab: tab] = state) do
-     {key, value} = binary_to_term(data)
+   def handle_handoff_data(data, State[tab: tab, staging_tab: staging] = state) do
+     tab =
+     case binary_to_term(data) do
+       {{:s, key}, value} -> staging
+       {key, value} -> tab
+     end
      ETS.insert(tab, {key, value})
      {:reply, :ok, state}
    end
