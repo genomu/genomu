@@ -284,8 +284,13 @@ defmodule ITC do
   @spec encode_binary(t, pad :: pos_integer) :: binary
   def encode_binary(clock, pad // 8) do
     encoded = encode(clock)
-    padding = pad - rem(bit_size(encoded), pad)
-    << encoded :: bitstring, 0 :: size(padding) >>
+    remainder = rem(bit_size(encoded), pad)
+    if remainder == 0 do
+      encoded
+    else
+      padding = pad - remainder
+      << encoded :: bitstring, 0 :: size(padding) >>
+    end
   end
 
   @spec encode_string(t) :: String.t
