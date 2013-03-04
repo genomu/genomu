@@ -61,13 +61,13 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
   @spec get_preflist(Genomu.key, Genomu.Transaction.t) :: :riak_core_apl.preflist
   defp get_preflist(key, Genomu.Transaction[vnodes: :primary] = txn) do
     lc {{partition, node}, _type} inlist
-       :riak_core_apl.get_primary_apl(hash(key), txn.n, Genomu.VNode) do
+       :riak_core_apl.get_primary_apl(hash(key), txn.n, :genomu) do
       {partition, node}
     end
   end
 
   defp get_preflist(key, Genomu.Transaction[] = txn) do
-    :riak_core_apl.get_apl(hash(key), txn.n, Genomu.VNode)
+    :riak_core_apl.get_apl(hash(key), txn.n, :genomu)
   end
 
   @spec hash(Genomu.key) :: Genomu.Coordinator.index

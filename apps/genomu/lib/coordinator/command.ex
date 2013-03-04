@@ -40,13 +40,13 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Command do
   @spec get_preflist(Genomu.Command.t) :: :riak_core_apl.preflist
   defp get_preflist(Genomu.Command[cell: {key, _rev}, vnodes: :primary] = command) do
     lc {{partition, node}, _type} inlist
-       :riak_core_apl.get_primary_apl(hash(key), command.n, Genomu.VNode) do
+       :riak_core_apl.get_primary_apl(hash(key), command.n, :genomu) do
       {partition, node}
     end
   end
 
   defp get_preflist(Genomu.Command[cell: {key, _rev}] = command) do
-    :riak_core_apl.get_apl(hash(key), command.n, Genomu.VNode)
+    :riak_core_apl.get_apl(hash(key), command.n, :genomu)
   end
 
   @spec hash(Genomu.key) :: Genomu.Coordinator.index
