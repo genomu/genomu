@@ -15,7 +15,7 @@ defmodule Genomu.Channel do
     :gen_server.start_link(__MODULE__, {true, parent, clock}, [])
   end
   def start_link(name, parent, clock) do
-    :gen_server.start_link({:local, name}, __MODULE__, {true, parent, clock}, [])
+    :gen_server.start_link({:local, name}, __MODULE__, {name, parent, clock}, [])
   end
 
   defrecord State, root: false, parent: nil,
@@ -23,7 +23,7 @@ defmodule Genomu.Channel do
                    snapshot: nil, log: [],
                    children: nil do
 
-    record_type root: boolean, parent: nil | Genomu.gen_server_ref,
+    record_type root: atom | boolean, parent: nil | Genomu.gen_server_ref,
                 clock: nil | ITC.t,
                 snapshot: nil | :ets.tid, log: [Genomu.Transaction.entry],
                 children: nil | :ets.tid
@@ -58,7 +58,7 @@ defmodule Genomu.Channel do
 
   @spec root?(Genomu.gen_server_ref) :: boolean
   defcall root?, state: State[root: root] = state do
-    {:reply, root, state}
+    {:reply, root != false, state}
   end
 
   @spec fork(Genomu.gen_server_ref) :: {:ok, pid}
