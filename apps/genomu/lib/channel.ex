@@ -199,6 +199,7 @@ defmodule Genomu.Channel do
     txn = Genomu.Transaction.new(clock: clock, log: Enum.reverse(log))
     Genomu.Coordinator.run(for: txn)
     update(parent, self, clock)
+    stop(self)
     {:reply, :ok, state.clock(clock)}
   end
 
