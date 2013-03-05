@@ -10,4 +10,15 @@ defmodule Genomu.Utils do
     macro*1000000000000+sec*1000000+micro
   end
 
+  @spec host_id :: binary
+  def host_id do
+    {:ok, ifaces} = :inet.getifaddrs
+    Enum.find_value(ifaces, fn({_iface, opts}) ->
+                              if opts[:hwaddr] do
+                                list_to_binary(opts[:hwaddr])
+                              end
+                            end)
+  end
+
+
 end
