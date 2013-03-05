@@ -15,7 +15,7 @@ defsupervisor Genomu.Sup, name: {:local, :genomu_sup} do
   end
 
   worker id: Genomu.Channel.Root,
-         module: Genomu.Channel, args: [Genomu.Channel.Root, nil, ITC.seed],
+         module: Genomu.Channel, args: [Genomu.Channel.Root, nil, nil],
          restart: :permanent
 
   supervisor Channels, strategy: :simple_one_for_one do

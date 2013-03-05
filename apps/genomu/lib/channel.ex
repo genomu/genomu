@@ -7,7 +7,9 @@ defmodule Genomu.Channel do
     Genomu.Channel.fork Genomu.Channel.Root
   end
 
-  @spec start_link(root :: atom | boolean, parent :: nil | Genomu.gen_server_ref, interval :: ITC.t) :: {:ok, pid} | {:error, reason :: term}
+  @spec start_link(root :: atom | boolean, 
+                   parent :: nil | Genomu.gen_server_ref, 
+                   clock :: ITC.t | nil) :: {:ok, pid} | {:error, reason :: term}
   def start_link(false, parent, clock) do
     :gen_server.start_link(__MODULE__, {false, parent, clock}, [])
   end
@@ -19,14 +21,68 @@ defmodule Genomu.Channel do
   end
 
   defrecord State, root: false, parent: nil,
-                   clock: nil,
+                   clock: nil, crash_clock: nil,
+                   outstanding: nil,
                    snapshot: nil, log: [],
                    children: nil do
 
     record_type root: atom | boolean, parent: nil | Genomu.gen_server_ref,
-                clock: nil | ITC.t,
+                clock: nil | ITC.t, crash_clock: nil | ITC.t,
+                outstanding: nil | ITC.t,
                 snapshot: nil | :ets.tid, log: [Genomu.Transaction.entry],
                 children: nil | :ets.tid
+
+    @spec initialize(t) :: t
+    def initialize(__MODULE__[root: false] = state) do
+      state
+    end
+    # If it's a root channel, and the clock is not
+    # specified, read it
+    def initialize(__MODULE__[clock: nil] = state) do
+      crash_clock = read_crash_clock(state)
+      state.crash_clock(crash_clock).clock(crash_clock)
+    end
+    def initialize(__MODULE__[] = state) do
+      state
+    end
+
+    @spec join_outstanding(ITC.t, t) :: t
+    def join_outstanding(new, __MODULE__[outstanding: nil] = state) do
+      state.outstanding(new)
+    end
+    def join_outstanding(new, __MODULE__[outstanding: clock] = state) do
+      try do
+        state.outstanding(ITC.join(clock, new))
+      catch _, _ -> # if we can't join, then we already did                    
+        state
+      end
+    end
+
+    defoverridable crash_clock: 2
+    def crash_clock(new_crash_clock, state) do
+      dump_crash_clock(super(new_crash_clock, state))
+    end
+
+    @spec dump_crash_clock(t) :: t
+    defp dump_crash_clock(__MODULE__[crash_clock: crash_clock] = state)  do
+      File.write(crash_clock_filename(state), ITC.encode_binary(crash_clock))
+      state
+    end
+
+    @spec read_crash_clock(t) :: ITC.t
+    defp read_crash_clock(__MODULE__[] = state) do
+      if File.exists?(crash_clock_filename(state)) do
+        File.read!(crash_clock_filename(state)) |> ITC.decode
+      else
+        ITC.seed
+      end
+    end
+
+    @spec crash_clock_filename(t) :: String.t
+    defp crash_clock_filename(__MODULE__[root: root]) do
+      data_dir = Application.environment(:genomu)[:data_dir]
+      Path.join(data_dir, "#{inspect root}")
+    end
 
     @spec memoize(Genomu.key, t) :: t
     def memoize(key, __MODULE__[snapshot: snapshot, clock: clock, log: log] = state) do
@@ -48,7 +104,7 @@ defmodule Genomu.Channel do
     :folsom_metrics.new_counter(Genomu.Metrics.Channels)
     :folsom_metrics.notify({Genomu.Metrics.Channels, {:inc, 1}})
     :erlang.process_flag(:trap_exit, true)
-    {:ok, State.new(root: root, parent: parent, clock: clock)}
+    {:ok, State.new(root: root, parent: parent, clock: clock).initialize}
   end
 
   @spec clock(Genomu.gen_server_ref) :: ITC.t
@@ -74,14 +130,15 @@ defmodule Genomu.Channel do
     :ets.insert(state.children,
                 [{channel, channel_clock},
                  {channel_clock, channel}])
-    state = state.clock(new_clock)
+    state = state.clock(new_clock).join_outstanding(channel_clock)
     {:reply, {:ok, channel}, state}
   end
 
   @spec fork_root(Genomu.gen_server_ref) :: ITC.t
-  defcall fork_root, state: State[clock: clock] = state do
+  defcall fork_root, state: State[clock: clock, crash_clock: crash_clock] = state do
     {new_clock, fork_clock} = ITC.fork(clock)
-    state = state.clock(new_clock)
+    {new_crash_clock, _} = ITC.fork(crash_clock)
+    state = state.clock(new_clock).crash_clock(new_crash_clock)
     {:reply, fork_clock, state}
   end
 
@@ -95,7 +152,7 @@ defmodule Genomu.Channel do
   @spec sync_with(server :: Genomu.gen_server_ref, sync_with :: Genomu.gen_server_ref) :: :ok
   defcall sync_with(sync_with), state: State[] = state do
     clock = fork_root(sync_with)
-    {:reply, :ok, state.update(clock: clock, parent: sync_with)}
+    {:reply, :ok, state.clock(clock).parent(sync_with).crash_clock(clock)}
   end
 
 
@@ -107,7 +164,7 @@ defmodule Genomu.Channel do
       [] -> 
         :ok # TODO: log a warning?
     end
-    {:noreply, state}
+    {:noreply, state.join_outstanding(new_clock)}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, _},
@@ -116,7 +173,8 @@ defmodule Genomu.Channel do
     :ets.delete(c, pid)
     :ets.delete(c, child_clock)
     new_clock = ITC.join(clock, child_clock)
-    state = state.clock(new_clock)
+    crash_clock = ITC.join(clock, state.outstanding)
+    state = state.clock(new_clock).crash_clock(crash_clock)
     {:noreply, state}
   end  
 
