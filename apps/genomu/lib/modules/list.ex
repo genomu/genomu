@@ -7,15 +7,15 @@ defmodule Genomu.Module.List do
   def head(MsgPack.fix_array(len: 0, rest: _rest), _no_arg) do
     @empty_value
   end
-  def head(MsgPack.fix_array(len: len, rest: rest), _no_arg) do
+  def head(MsgPack.fix_array(rest: rest), _no_arg) do
     {head, _tail} = MsgPack.next(rest)
     head
   end
-  def head(MsgPack.array16(len: len, rest: rest), _no_arg) do
+  def head(MsgPack.array16(rest: rest), _no_arg) do
     {head, _tail} = MsgPack.next(rest)
     head
   end
-  def head(MsgPack.array32(len: len, rest: rest), _no_arg) do
+  def head(MsgPack.array32(rest: rest), _no_arg) do
     {head, _tail} = MsgPack.next(rest)
     head
   end
