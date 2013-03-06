@@ -1,0 +1,60 @@
+.navbar-inner a i {
+	margin-top: 4px;
+}
+
+.box-header h2 i {
+	margin-top: 1px;
+}
+
+.todo-actions i {
+	margin: 2px 5px 0px 5px;	
+}
+
+.message .header i {
+	margin-top: 3px;
+}
+
+#content {
+	padding: 20px;
+	margin-left: -2px;
+}
+
+hr {
+	height: 2px;
+	border: none;
+	background: #f9f9f9;
+}
+
+.dark {
+	right: -12px;	
+}
+
+#sidebar-left {
+	background: transparent;
+	margin: -1px 0px 0px 25px;
+	padding-top: 0px;
+}
+
+.sidebar-nav > ul{
+	margin: 0px 0px 0px -20px;
+}
+
+footer {
+	margin: 20px -20px 0px -20px;
+	padding: 10px 20px;
+	position: relative;
+	z-index: 2;
+}
+
+.hideInIE8 {
+	display: none;
+}
+
+.task .time .date {
+	font-size: 14px;
+	margin-bottom: 5px;	
+}
+
+.verticalChart .singleBar .bar .value span{
+	color: #3b3b41;
+}

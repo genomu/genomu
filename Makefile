@@ -1,5 +1,6 @@
-genomu_src := $(wildcard apps/genomu/lib/*.ex) \
-              $(wildcard apps/genomu/lib/**/*.ex) apps/genomu/mix.exs
+genomu_src := $(wildcard apps/genomu/lib/*.ex) $(wildcard apps/genomu/lib/**/*.ex) \
+              $(wildcard apps/genomu/lib/**/**/*.eex) \
+              apps/genomu/mix.exs
 
 .PHONY: all test
 

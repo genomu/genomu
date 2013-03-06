@@ -8,8 +8,11 @@ defmodule Genomu.HTTP do
 
     dispatch = [
       {:_, [
+        {"/", Genomu.HTTP.Page, []},
+        {"/template/[:page]", Genomu.HTTP.Page, []},
         {"/instance", Genomu.HTTP.Instance, []},
         {"/cluster/[membership[/staging]]", Genomu.HTTP.Cluster, []},
+        {"/[...]", :cowboy_static, static},
       ]},
     ] |> :cowboy_router.compile
 
