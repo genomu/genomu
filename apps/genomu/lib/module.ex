@@ -45,20 +45,24 @@ defmodule Genomu.Module do
   end
 
   def __on_definition__(env, :def, name, [_, _], _guards, _body) do
-    module     = env.module
+    module = env.module
+    last_operation = Module.get_attribute(module, :last_operation)
     operation_id = Module.get_attribute(module, :id)
     args = Module.get_attribute(module, :args)
-    operation = [id: operation_id, name: name, args: args]
-    Module.put_attribute(module, :operation, {{:name, name}, operation})
-    Module.put_attribute(module, :operation, {{:id, operation_id}, operation})
-    quoted = quote do
-      def unquote(name)(data) do
-        Genomu.Operation.new(__MODULE__, unquote(name),
-                             MsgPack.pack(data))
+    unless last_operation == {name, args} do
+      operation = [id: operation_id, name: name, args: args]
+      Module.put_attribute(module, :operation, {{:name, name}, operation})
+      Module.put_attribute(module, :operation, {{:id, operation_id}, operation})
+      quoted = quote do
+        def unquote(name)(data) do
+          Genomu.Operation.new(__MODULE__, unquote(name),
+                               MsgPack.pack(data))
+        end
+        @id (@id + 1)
+        @last_operation {unquote(name), unquote(args)}
       end
-      @id (@id + 1)
+      Module.eval_quoted module, quoted
     end
-    Module.eval_quoted module, quoted
   end
   def __on_definition__(_env, :def, _name, [_], _guards, _body) do
   end
