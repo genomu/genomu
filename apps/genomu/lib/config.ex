@@ -19,6 +19,8 @@ defmodule Genomu.Config do
   defproperty pid_file
   @shortdoc "Cluster name"
   defproperty cluster_name, default: "default"
+  @shortdoc "Port"
+  defproperty port, default: 9101
 
   def sys_config(config) do
     [
@@ -26,7 +28,8 @@ defmodule Genomu.Config do
        data_dir: Path.join(config.data_dir, to_binary(config.instance_name)),
        http_port: config.http_port,
        pid_file: config.pid_file || Path.join([config.data_dir, to_binary(config.instance_name), "genomu.pid"]),
-       hostname: config.hostname
+       hostname: config.hostname,
+       port: config.port,
      ],
      riak_core: [
        ring_state_dir: to_char_list(Path.join([config.data_dir, to_binary(config.instance_name), "ring"])),

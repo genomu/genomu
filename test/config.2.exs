@@ -4,4 +4,5 @@ Genomu.Config.config do
   config.http_port 9129
   config.handoff_port 8100
   config.quiet_mode true
+  config.port 9102
 end

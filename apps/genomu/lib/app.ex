@@ -31,12 +31,16 @@ defmodule Genomu.App do
   def start(_, _) do
     env = Application.environment(:genomu)
     pid_file = env[:pid_file]
+    protocol_port = env[:port]
     File.mkdir_p(Path.dirname(pid_file))
     File.write!(pid_file, System.get_pid)
     case Genomu.Sup.start_link do
       {:ok, pid} ->
         :ok = :riak_core.register(:genomu, [{:vnode_module, Genomu.VNode}])
         {:ok, _} = Genomu.HTTP.start
+        {:ok, _} = :ranch.start_listener(Genomu.Protocol, 100,
+                          :ranch_tcp, [port: protocol_port],
+                          Genomu.Protocol, [])
         setup_modules
         {:ok, pid}
       other -> other

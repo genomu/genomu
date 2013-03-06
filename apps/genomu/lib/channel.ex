@@ -208,6 +208,10 @@ defmodule Genomu.Channel do
     {:stop, :normal, state}
   end
 
+  def handle_info({:'EXIT', _, _}, state) do
+    {:noreply, state}
+  end
+
   def terminate(_, State[]) do
     :folsom_metrics.notify({Genomu.Metrics.Channels, {:dec, 1}})
   end
