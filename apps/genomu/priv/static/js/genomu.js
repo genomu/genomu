@@ -23,6 +23,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams) {
 app.config(function ($routeProvider) {
       $routeProvider.
       when('/', { templateUrl: '/template/dashboard', controller: 'DashboardCtrl' }).
+      when('/instances', { templateUrl: '/template/instances', controller: 'DashboardCtrl' }).
       when('/partitions', { templateUrl: '/template/partitions', controller: 'DashboardCtrl' }).
       otherwise({redirectTo:'/'});
 });

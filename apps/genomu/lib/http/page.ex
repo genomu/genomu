@@ -12,6 +12,9 @@ defmodule Genomu.HTTP.Page do
   def handle_path("/template/dashboard", req, state) do
     page("Dashboard", dashboard_page([]), req, state)
   end
+  def handle_path("/template/instances", req, state) do
+    page("Instances", instances_page([]), req, state)
+  end
   def handle_path("/template/partitions", req, state) do
     page("Partitions", partitions_page([]), req, state)
   end
@@ -40,14 +43,18 @@ defmodule Genomu.HTTP.Page do
   EEx.function_from_file :defp, :dashboard_page,
                          Path.expand("../templates/dashboard.html.eex", __FILE__),
                          [:assigns]
+  EEx.function_from_file :defp, :instances_page,
+                         Path.expand("../templates/instances.html.eex", __FILE__),
+                         [:assigns]
   EEx.function_from_file :defp, :partitions_page,
                          Path.expand("../templates/partitions.html.eex", __FILE__),
                          [:assigns]
 
   defp pages(active) do
     [
-     {"Dashboard","/", "bar-chart"},
-     {"Partitions","/#/partitions", "cogs"},
+     {"Dashboard", "/", "bar-chart"},
+     {"Instances", "/#/instances", "hdd"},
+     {"Partitions", "/#/partitions", "cogs"},
     ] |> Enum.map(fn({name, url, icon}) -> {name, url, icon, name == active} end)
   end
 end
