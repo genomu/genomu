@@ -49,8 +49,9 @@ defmodule Genomu.Module do
     last_operation = Module.get_attribute(module, :last_operation)
     operation_id = Module.get_attribute(module, :id)
     args = Module.get_attribute(module, :args)
+    public_name = Module.get_attribute(module, :name) || name
     unless last_operation == {name, args} do
-      operation = [id: operation_id, name: name, args: args]
+      operation = [id: operation_id, name: name, public_name: public_name, args: args]
       Module.put_attribute(module, :operation, {{:name, name}, operation})
       Module.put_attribute(module, :operation, {{:id, operation_id}, operation})
       quoted = quote do
@@ -60,6 +61,7 @@ defmodule Genomu.Module do
         end
         @id (@id + 1)
         @last_operation {unquote(name), unquote(args)}
+        @name nil
       end
       Module.eval_quoted module, quoted
     end
@@ -83,7 +85,7 @@ defmodule Genomu.Module do
       doc: module_doc,
       operations:
         (lc {_, attrs} inlist operations(module) do
-          name = attrs[:name] |> to_binary
+          name = attrs[:public_name] |> to_binary
           {_, _, _, _, doc} = List.keyfind(module.__info__(:docs), {attrs[:name], 2}, 0)
           doc = doc || :null
           {name, [id: attrs[:id], name: name, args: attrs[:args], doc: doc]}

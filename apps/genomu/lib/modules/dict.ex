@@ -31,8 +31,8 @@ defmodule Genomu.Module.Dict do
     end
   end
 
-  # TODO: find a better name than "set"
   @args 2
+  @name :value 
   def set(MsgPack.fix_map(len: 15, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
     {key, new_val} = MsgPack.next(pair)
     {new, appendp} = set_(rest, key, new_val)
