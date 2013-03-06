@@ -15,6 +15,7 @@ defmodule Genomu.HTTP.Instance do
             system_version: Genomu.system_version,
             instance_url: Genomu.instance_url,
             channels: :folsom_metrics.get_metric_value(Genomu.Metrics.Channels),
+            partitions: Genomu.Cluster.indices(Node.self),
             node: node |> to_binary]
     {json |> maybe_jsonp(req), req, state}
   end
