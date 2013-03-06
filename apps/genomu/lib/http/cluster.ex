@@ -72,7 +72,7 @@ defmodule Genomu.HTTP.Cluster do
                                   [url: instance_url(node),
                                    node: node |> to_binary,
                                    status: status |> to_binary,
-                                   indices: Genomu.Cluster.indices(node),
+                                   indices: Genomu.Cluster.indices(node) |> Enum.map(&1 |> to_binary),
                                    future_indices: Genomu.Cluster.future_indices(node),
                                   ]
                                 end),
