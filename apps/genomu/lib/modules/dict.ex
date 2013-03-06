@@ -102,4 +102,70 @@ defmodule Genomu.Module.Dict do
     end
   end
 
+  @args 0
+  def keys(MsgPack.fix_map(rest: rest), _no_arg) do
+    keys_(rest)
+  end
+  def keys(MsgPack.map16(rest: rest), _no_arg) do
+    keys_(rest)
+  end
+  def keys(MsgPack.map32(rest: rest), _no_arg) do
+    keys_(rest)
+  end
+
+  defp keys_(bin) do
+    keys_(bin, 0, "")
+  end
+
+  defp keys_("", length, acc), do: arr_(length, acc)
+  defp keys_(bin, length, acc) do
+    {key, bin} = MsgPack.next(bin)
+    {_val, bin} = MsgPack.next(bin)
+    keys_(bin, length + 1, acc <> key)
+  end
+
+  @args 0
+  def values(MsgPack.fix_map(rest: rest), _no_arg) do
+    values_(rest)
+  end
+  def values(MsgPack.map16(rest: rest), _no_arg) do
+    values_(rest)
+  end
+  def values(MsgPack.map32(rest: rest), _no_arg) do
+    values_(rest)
+  end
+
+  defp values_(bin) do
+    values_(bin, 0, "")
+  end
+
+  defp values_("", length, acc), do: arr_(length, acc)
+  defp values_(bin, length, acc) do
+    {_key, bin} = MsgPack.next(bin)
+    {val, bin} = MsgPack.next(bin)
+    values_(bin, length + 1, acc <> val)
+  end
+
+
+  @args 0
+  def size(MsgPack.fix_map(len: len), _no_arg) do
+    MsgPack.pack(len)
+  end
+  def size(MsgPack.map16(len: len), _no_arg) do
+    MsgPack.pack(len)
+  end
+  def size(MsgPack.map32(len: len), _no_arg) do
+    MsgPack.pack(len)
+  end
+
+  defp arr_(length, bin) when length < 16 do
+    MsgPack.fix_array(len: length, rest: bin)
+  end
+  defp arr_(length, bin) when length < 0x10000 do
+    MsgPack.array16(len: length, rest: bin)
+  end
+  defp arr_(length, bin) do
+    MsgPack.array32(len: length, rest: bin)
+  end
+
 end
