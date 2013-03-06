@@ -11,4 +11,13 @@ defmodule Genomu.Module.Core do
     new_value
   end
 
+  @args 2
+  def compose(value, MsgPack.fix_array(len: 2) = arr) do
+    {[bin1, bin2], ""} = MsgPack.unpack(arr)
+    {op1, rest} = Genomu.Operation.deserialize(bin1)
+    {op2, rest} = Genomu.Operation.deserialize(bin2)
+    value = Genomu.Operation.apply(op2, value)
+    Genomu.Operation.apply(op1, value)
+  end
+
 end
