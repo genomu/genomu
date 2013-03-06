@@ -208,8 +208,8 @@ defmodule Genomu.Channel do
     {:stop, :normal, state}
   end
 
-  def handle_info({:'EXIT', _, _}, state) do
-    {:noreply, state}
+  def handle_info({:'EXIT', proc, reason}, state) do
+    {:stop, :normal, state}
   end
 
   def terminate(_, State[]) do
