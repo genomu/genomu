@@ -63,6 +63,7 @@ defmodule Genomu.App do
     Module.create Genomu.Commands, quoted, __ENV__
   end
 
-  defp modules, do: [Genomu.Module.Core, Genomu.Module.Binary]
+  defp modules, do: [Genomu.Module.Core, Genomu.Module.Binary,
+                     Genomu.Module.List]
 
 end
