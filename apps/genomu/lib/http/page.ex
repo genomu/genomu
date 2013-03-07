@@ -36,19 +36,19 @@ defmodule Genomu.HTTP.Page do
   require EEx
   EEx.function_from_file :defp, :page,
                          Path.expand("../templates/index.html.eex", __FILE__),
-                         [:assigns]
+                         [:_assigns]
   EEx.function_from_file :defp, :view_page,
                          Path.expand("../templates/view.html.eex", __FILE__),
                          [:assigns]
   EEx.function_from_file :defp, :dashboard_page,
                          Path.expand("../templates/dashboard.html.eex", __FILE__),
-                         [:assigns]
+                         [:_assigns]
   EEx.function_from_file :defp, :instances_page,
                          Path.expand("../templates/instances.html.eex", __FILE__),
-                         [:assigns]
+                         [:_assigns]
   EEx.function_from_file :defp, :partitions_page,
                          Path.expand("../templates/partitions.html.eex", __FILE__),
-                         [:assigns]
+                         [:_assigns]
 
   defp pages(active) do
     [
