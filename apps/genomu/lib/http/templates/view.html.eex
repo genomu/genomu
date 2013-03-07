@@ -1,3 +1,40 @@
+    <!-- start: Header -->
+  <div class="navbar">
+    <div class="navbar-inner">
+      <div class="container-fluid">
+        <a class="btn btn-navbar" data-toggle="collapse" data-target=".top-nav.nav-collapse,.sidebar-nav.nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </a>
+        <a class="brand" href="/"><span>Genomu</span>
+          <span ng-bind="instance.system_version"></span></a>
+                
+        <!-- start: Header Menu -->
+        <div class="nav-no-collapse header-nav">
+          <ul class="nav pull-right">
+            <li class="dropdown">
+              <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                <i class="halflings-icon white hdd"></i><span ng-bind="instance.name"></span>
+                <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu" >
+                <li ng-repeat="i in clusterMembership.instances"><a href="{{ i.url }}{{ page() }}"><i class="halflings-icon white hdd"></i> {{ i.name }} </a></li>
+              </ul>
+            </li>
+            <!-- end: User Dropdown -->
+           </ul>
+        </div>
+        <!-- end: Header Menu -->
+        
+      </div>
+    </div>
+  </div>
+  <!-- start: Header -->
+  
+    <div class="container-fluid">
+    <div class="row-fluid">
+        
       <!-- start: Main Menu -->
       <div id="sidebar-left" class="span1">
         <div class="nav-collapse sidebar-nav">
@@ -21,3 +58,15 @@
       <!-- start: Content -->
         <%= @view %>
       <!-- end: Content -->
+
+    </div><!--/fluid-row-->
+    
+    <div class="clearfix"></div>
+    <footer>
+      <p>
+        <span style="text-align:left;float:left">&copy; <a href="" target="_blank">Spawngrid, Inc.</a> 2013</span>
+      </p>
+
+    </footer>
+        
+  </div><!--/.fluid-container-->
