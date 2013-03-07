@@ -172,7 +172,7 @@ defmodule Genomu.VNode do
    defp lookup_cell({key, nil}, State[tab: tab]) do
      case ETS.lookup(tab, key) do
        [{^key, {value, [{clock, txn_clock}|_history]}}] -> {value, clock, txn_clock}
-       _ -> {@nil_value, @nil_value, @nil_value}
+       _ -> {@nil_value, "", ""}
      end
    end
    defp lookup_cell({key, rev} = cell, State[tab: tab, staging_tab: staging]) do
@@ -180,7 +180,7 @@ defmodule Genomu.VNode do
        [{^cell, {value, _serialized}}] -> {value, rev, rev}
        [] -> 
          case ETS.lookup(tab, {:C, rev}) do
-          [] -> {@nil_value, rev, rev}
+          [] -> {@nil_value, "", ""}
           [{_, {commit_object, _}}] ->
             {MsgPack.Map[map: map],""} = MsgPack.unpack(commit_object)
             MsgPack.Map[map: entries] = map[CO.entries]
