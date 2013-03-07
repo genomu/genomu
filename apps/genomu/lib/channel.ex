@@ -102,7 +102,7 @@ defmodule Genomu.Channel do
 
   def init({root, parent, clock}) do
     :folsom_metrics.new_counter(Genomu.Metrics.Channels)
-    :folsom_metrics.notify({Genomu.Metrics.Channels, {:inc, 1}})
+    if root == false, do: :folsom_metrics.notify({Genomu.Metrics.Channels, {:inc, 1}})
     :erlang.process_flag(:trap_exit, true)
     {:ok, State.new(root: root, parent: parent, clock: clock).initialize}
   end
@@ -211,8 +211,11 @@ defmodule Genomu.Channel do
     {:stop, :normal, state}
   end
 
-  def terminate(_, State[]) do
+  def terminate(_, State[root: false]) do
     :folsom_metrics.notify({Genomu.Metrics.Channels, {:dec, 1}})
+  end
+  def terminate(_, State[]) do
+    :ok
   end
 
   @spec next_clock(ITC.t, Genomu.command) :: ITC.t
