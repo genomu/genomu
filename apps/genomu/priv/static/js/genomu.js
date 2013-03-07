@@ -1,4 +1,4 @@
-var app = angular.module('genomuApp', ['ngResource']);
+var app = angular.module('genomuApp', ['ngResource','ui']);
 
 
 app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, $timeout) {

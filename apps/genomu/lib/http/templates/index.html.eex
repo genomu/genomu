@@ -155,6 +155,9 @@
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.5/angular.min.js"></script>
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.5/angular-resource.min.js"></script>
+
+    <script type="text/javascript" src="/js/angular-ui.min.js">
+    </script>
     
     <script type="text/javascript" src="/js/genomu.js">
     </script>

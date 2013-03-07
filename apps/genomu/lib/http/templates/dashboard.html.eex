@@ -44,7 +44,6 @@
                       <th>Status</th>
                       <th>Instance</th>
                       <th>Ownership</th>
-                      <th>Pending ownership</th>
                       <th>Node</th>
                     </tr>
                   </thead>   
@@ -52,8 +51,15 @@
                   <tr ng-repeat="i in clusterMembership.instances">
                     <td ng-bind="i.status"></td>
                     <td><a href="{{ i.url }}">{{ i.name }} ({{ i.url }})</a></td>
-                    <td ng-bind="ownership(i) + '%'"></td>
-                    <td ng-bind="pendingOwnership(i) + '%'"></td>
+                    <td ui-if="ownership(i) == pendingOwnership(i)">
+                      {{ ownership(i) }}%
+                    </td>
+                    <td ui-if="ownership(i) > pendingOwnership(i)">
+                      <img src="img/downarrow.png">{{ ownership(i) }}% (pending {{ pendingOwnership(i)}}%)
+                    </td>
+                    <td ui-if="ownership(i) < pendingOwnership(i)">
+                      <img src="img/uparrow.png">{{ ownership(i) }}% (pending {{ pendingOwnership(i)}}%)
+                    </td>                    
                     <td ng-bind="i.node"></td>
                   </tr>
                 </tbody>
