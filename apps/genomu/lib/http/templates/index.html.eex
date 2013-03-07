@@ -52,10 +52,22 @@
           <span class="icon-bar"></span>
         </a>
         <a class="brand" href="/"><span>Genomu</span>
-          <span ng-controller="DashboardCtrl" ng-bind="instance.system_version"></span> @ <span ng-controller="DashboardCtrl" ng-bind="instance.instance_url"></span></a>
+          <span ng-controller="DashboardCtrl" ng-bind="instance.system_version"></span></a>
                 
         <!-- start: Header Menu -->
-        <div class="nav-no-collapse header-nav">
+        <div class="nav-no-collapse header-nav" ng-controller="DashboardCtrl">
+          <ul class="nav pull-right">
+            <li class="dropdown">
+              <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                <i class="halflings-icon white hdd"></i><span ng-bind="instance.instance_url"></span>
+                <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu" >
+                <li ng-repeat="i in clusterMembership.instances"><a href="{{ i.url }}"><i class="halflings-icon white hdd"></i> {{ i.url }} </a></li>
+              </ul>
+            </li>
+            <!-- end: User Dropdown -->
+           </ul>
         </div>
         <!-- end: Header Menu -->
         
