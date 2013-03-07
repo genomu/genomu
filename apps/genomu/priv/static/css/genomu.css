@@ -3,11 +3,6 @@ html,body{
 }
 
 footer {
-/*    bottom: 0px !important;
-    left: 0;
-    position: fixed !important;
-    right: 0; 
-    */
     height: 24px; 
     width:100%;
     position: absolute !important;
