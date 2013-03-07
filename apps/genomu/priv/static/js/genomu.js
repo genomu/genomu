@@ -1,5 +1,15 @@
 var app = angular.module('genomuApp', ['ngResource','ui']);
+var idle = false;
 
+$(document).idle({
+  onIdle: function(){
+    window.idle = true;
+  },
+  onActive: function(){
+    window.idle = false;
+  },
+  idle: 10000
+})
 
 app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, $timeout) {
     var Instance = $resource('/instance');
@@ -66,7 +76,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
     }
 
     var refresh_ = function() {
-        refresh();
+        if (!window.idle) refresh();
         $timeout(refresh_, 2500);
     }
 

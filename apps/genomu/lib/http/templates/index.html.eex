@@ -41,7 +41,7 @@
     
 </head>
 
-<body ng-app="genomuApp">
+<body ng-app="genomuApp" ng-controller="DashboardCtrl">
     <!-- start: Header -->
   <div class="navbar">
     <div class="navbar-inner">
@@ -52,10 +52,10 @@
           <span class="icon-bar"></span>
         </a>
         <a class="brand" href="/"><span>Genomu</span>
-          <span ng-controller="DashboardCtrl" ng-bind="instance.system_version"></span></a>
+          <span ng-bind="instance.system_version"></span></a>
                 
         <!-- start: Header Menu -->
-        <div class="nav-no-collapse header-nav" ng-controller="DashboardCtrl">
+        <div class="nav-no-collapse header-nav">
           <ul class="nav pull-right">
             <li class="dropdown">
               <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
@@ -157,6 +157,9 @@
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.5/angular-resource.min.js"></script>
 
     <script type="text/javascript" src="/js/angular-ui.min.js">
+    </script>
+
+    <script type="text/javascript" src="/js/jquery.idle.min.js">
     </script>
     
     <script type="text/javascript" src="/js/genomu.js">

@@ -1,4 +1,4 @@
-      <div id="content" ng-controller="DashboardCtrl" class="span11">
+      <div id="content" class="span11">
       
       
       <div class="row-fluid">
