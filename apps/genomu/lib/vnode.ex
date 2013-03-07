@@ -95,7 +95,7 @@ defmodule Genomu.VNode do
        [{^entry, {value, _serialized}}] = ETS.lookup(staging, entry)
        ETS.insert(tab, {key, {value, [{entry_clock, clock}|history]}})
      end
-     ETS.insert(tab, {["_","sys","commit", clock], {commit_object, [clock]}})
+     ETS.insert(tab, {{:C, clock}, {commit_object, [clock]}})
      {:reply, {:ok, ref, state.partition, :ok}, state}
    end
 
