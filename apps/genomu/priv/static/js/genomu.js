@@ -6,7 +6,8 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
     var Cluster = $resource('/cluster');
     var ClusterMembership = $resource('/cluster/membership');
     var ClusterMembershipPlan = $resource('/cluster/membership/staging',{},
-                                          {commit: {method: 'POST'}});
+                                          {commit: {method: 'POST'},
+                                           discard: {method: 'DELETE'}});
 
     $scope.instance = Instance.get();
     $scope.cluster = Cluster.get();
@@ -32,6 +33,10 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
 
     $scope.commitPlan = function() {
         $scope.clusterMembershipPlan.$commit();
+    }
+
+    $scope.discardPlan = function() {
+        $scope.clusterMembershipPlan.$discard(); 
     }
 
     $scope.stageJoin = function() {

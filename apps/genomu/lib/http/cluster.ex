@@ -8,7 +8,7 @@ defmodule Genomu.HTTP.Cluster do
 
   # Allow OPTIONS for cross-site calls
   def allowed_methods(req, state) do
-    {["GET", "POST"], req, state}
+    {["GET", "POST", "DELETE"], req, state}
   end
 
   def content_types_provided(req, state) do
@@ -60,7 +60,18 @@ defmodule Genomu.HTTP.Cluster do
       :ok -> {true, req, state}
       _ -> {false, req, state} # TODO: improve
     end
-  end  
+  end
+
+  def delete_resource(req, state) do
+    {path, req} = :cowboy_req.path(req)
+    delete_resource(path, req, state)
+  end
+
+  def delete_resource("/cluster/membership/staging", req, state) do
+    :ok = :riak_core_claimant.clear
+    {true, req, state}
+  end
+
 
   def to_json(req, state) do
     case :cowboy_req.qs_val("method", req) do

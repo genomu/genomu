@@ -89,7 +89,10 @@
                 </tbody>
              </table>
              <div class="row-fluid">
-               <button class="pull-right btn3d btn-large btn-warning" ng-click="commitPlan()">Commit</button>
+               <div class="pull-right">
+                 <button class="btn3d btn-large btn-danger" ng-click="discardPlan()">Discard</button>
+                 <button class="btn3d btn-large btn-success" ng-click="commitPlan()">Commit</button>
+               </div>
             </div>
 
           </div>
