@@ -42,6 +42,13 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
           sticky: false
         });
       });
+      _.difference(o,n).map(function(name) {
+        $.gritter.add({
+          title: 'Instance leaving',
+          text: name + ' is leaving the cluster',
+          sticky: false
+        });
+      });
     });
 
     $scope.findInstanceByURL = function(url) {
