@@ -50,18 +50,23 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
     }
 
     $scope.stageJoin = function() {
-         var i = $scope.instanceToAdd;
+       var i = $scope.instanceToAdd;
 
-         if (i.substring(0, 6) != "http://" &&
-             i.substring(0, 7) != "https://") {
-            i = "http://" + i;
-         }
+       if (i.substring(0, 6) != "http://" &&
+           i.substring(0, 7) != "https://") {
+          i = "http://" + i;
+       }
+
+       $scope.instanceToAdd = '';
 
        $http.jsonp(i +
                    '/cluster/membership',
-                   {params: {instance_url: $scope.instance.instance_url, method: 'POST'}});
+                   {params: {instance_url: $scope.instance.instance_url, method: 'POST'}}).
+             error(function() {
+                noty({"text":"Can't add an instance at " + i,"layout":"center","type":"error", modal: true,
+                     closeWith: ['click']});
+             });
 
-        $scope.instanceToAdd = '';
     }
 
     $scope.page = function() {
