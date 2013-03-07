@@ -178,12 +178,11 @@ defmodule Genomu.Channel do
     {:noreply, state}
   end  
 
-  @spec execute(pid, Genomu.key, Genomu.command, Keyword.t) :: term
+  @spec execute(pid, Genomu.key | Genomu.cell, Genomu.command, Keyword.t) :: term
   defcall execute(key, cmd, options), state: State[] = state do
     state = ensure_snapshot(state)
-
     clock = next_clock(state.clock, cmd)
-    cell = {key, state.lookup(key)}
+    cell = get_cell(key, state)
     revision = ITC.encode_binary(clock)
     cmd = cmd.update(cell: cell, new_revision: revision)
     coord_options = [for: cmd] |>
@@ -241,6 +240,11 @@ defmodule Genomu.Channel do
   defp ensure_children(State[] = state) do
     state
   end
+
+  defp get_cell(key, state) when is_list(key) do
+    {key, state.lookup(key)}
+  end
+  defp get_cell({_, _} = cell, _state), do: cell
 
 
 end

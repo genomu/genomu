@@ -55,11 +55,15 @@ defmodule Genomu.Protocol do
                 :gen_server.cast(me, {channel, response})
               end)
           _ ->
+            case key do
+              MsgPack.Map[map: [{0, [key, rev]}]] -> addr = {key, rev}
+              _ -> addr = key
+            end
             {type, rest} = MsgPack.unpack(rest)
             {op, rest} = Genomu.Operation.deserialize(rest)
             cmd = command(type, op)
             spawn(fn -> 
-                    response = Genomu.Channel.execute(ch, key, cmd, [])
+                    response = Genomu.Channel.execute(ch, addr, cmd, [])
                     :gen_server.cast(me, {channel, response})
                   end)
         end
