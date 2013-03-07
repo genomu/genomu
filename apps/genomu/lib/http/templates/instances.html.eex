@@ -1,10 +1,7 @@
 <div id="content" class="span11">
 
 
-<div class="row-fluid">
-
-
-      <div  class="row-fluid">
+      <div class="row-fluid">
           <div class="box span12">
           <div class="box-header" data-original-title>
             <h2><i class="halflings-icon hdd"></i><span class="break"></span>Instances</h2>
@@ -37,6 +34,7 @@
                 </tbody>
              </table>
           </div>
+        </div>
       </div>
  
        <div  class="row-fluid">
@@ -98,7 +96,8 @@
           </div>
       </div>
       
-</div>  
+    </div>  
+</div>
 
 
 
