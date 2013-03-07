@@ -52,7 +52,7 @@ defmodule Genomu.HTTP.Page do
 
   defp pages(active) do
     [
-     {"Dashboard", "/", "bar-chart"},
+     {"Dashboard", "/#/", "bar-chart"},
      {"Instances", "/#/instances", "hdd"},
      {"Partitions", "/#/partitions", "cogs"},
     ] |> Enum.map(fn({name, url, icon}) -> {name, url, icon, name == active} end)
