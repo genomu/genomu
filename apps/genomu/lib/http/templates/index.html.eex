@@ -41,7 +41,7 @@
     
 </head>
 
-<body ng-app="genomuApp" ng-controller="DashboardCtrl">
+<body ng-app="genomuApp">
     <!-- start: Header -->
   <div class="navbar">
     <div class="navbar-inner">
@@ -161,6 +161,8 @@
 
     <script type="text/javascript" src="/js/jquery.idle.min.js">
     </script>
+
+    <script type="text/javascript" src="/js/underscore-min.js"></script>
     
     <script type="text/javascript" src="/js/genomu.js">
     </script>

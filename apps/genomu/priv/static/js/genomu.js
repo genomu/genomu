@@ -31,6 +31,19 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
       return (instance.future_indices.length * 100 / $scope.cluster.num_partitions)
     };
 
+    $scope.$watch('clusterMembership.instances', function(n, o) {
+      if (typeof n == 'undefined' || typeof o == 'undefined') return;
+      n = angular.fromJson(angular.toJson(n)).map(function(v) { return v.name });
+      o = angular.fromJson(angular.toJson(o)).map(function(v) { return v.name });
+      _.difference(n,o).map(function(name) {
+        $.gritter.add({
+          title: 'New instance',
+          text: name + ' is joining the cluster',
+          sticky: false
+        });
+      });
+    });
+
     $scope.findInstanceByURL = function(url) {
         var instances = $scope.clusterMembership.instances;
         for (var i in instances) {
@@ -61,12 +74,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
 
        $http.jsonp(i +
                    '/cluster/membership',
-                   {params: {instance_url: $scope.instance.instance_url, method: 'POST'}}).
-             error(function() {
-                noty({"text":"Can't add an instance at " + i,"layout":"center","type":"error", modal: true,
-                     closeWith: ['click']});
-             });
-
+                   {params: {instance_url: $scope.instance.instance_url, method: 'POST'}});
     }
 
     $scope.page = function() {
