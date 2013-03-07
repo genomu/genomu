@@ -55,7 +55,7 @@ defmodule Genomu.VNode do
 
    def handle_command({{key, _rev} = cell, new_rev, cmd, ref}, sender,
                       State[] = state) do
-     {value, rev} = lookup_cell(cell, state)
+     {value, rev, txn_ref} = lookup_cell(cell, state)
      case cmd do
        {cmd_name, operation} when cmd_name in [:apply, :set] ->
          case apply_operation(operation, value) do
@@ -78,9 +78,9 @@ defmodule Genomu.VNode do
        :apply ->
          VNode.reply(sender, {:ok, ref, state.partition, :ok})
        :get ->
-         VNode.reply(sender, {:ok, ref, state.partition, {new_value, rev}})
+         VNode.reply(sender, {:ok, ref, state.partition, {{new_value, rev}, txn_ref}})
        :set ->
-         VNode.reply(sender, {:ok, ref, state.partition, {new_value, new_rev}})
+         VNode.reply(sender, {:ok, ref, state.partition, {{new_value, new_rev}, txn_ref}})
      end
      {:noreply, state}
    end
@@ -97,6 +97,13 @@ defmodule Genomu.VNode do
      end
      ETS.insert(tab, {{:C, clock}, {commit_object, [clock]}})
      {:reply, {:ok, ref, state.partition, :ok}, state}
+   end
+
+   def handle_command({:c, clock, ref}, _sender, State[tab: tab] = state) do
+     case ETS.lookup(tab, {:C, clock}) do
+       [] -> {:reply, {:ok, ref, state.partition, nil}, state}
+       [{_, {commit_object, _}}] -> {:reply, {:ok, ref, state.partition, commit_object}, state}
+     end
    end
 
 
@@ -158,17 +165,29 @@ defmodule Genomu.VNode do
    def terminate(_, State[]) do
    end
 
-   @spec lookup_cell(Genomu.cell, State.t) :: term | nil
+   require Genomu.Constants.CommitObject
+   alias Genomu.Constants.CommitObject, as: CO
+
+   @spec lookup_cell(Genomu.cell, State.t) :: {term, ITC.t | term, ITC.t | term}
    defp lookup_cell({key, nil}, State[tab: tab]) do
      case ETS.lookup(tab, key) do
-       [{^key, {value, [{clock,_}|_history]}}] -> {value, clock}
-       _v -> {@nil_value, ""}
+       [{^key, {value, [{clock, txn_clock}|_history]}}] -> {value, clock, txn_clock}
+       _ -> {@nil_value, @nil_value, @nil_value}
      end
    end
-   defp lookup_cell({_key, rev} = cell, State[staging_tab: tab]) do
-     case ETS.lookup(tab, cell) do
-       [{^cell, {value, _serialized}}] -> {value, rev}
-       _ -> {@nil_value, rev}
+   defp lookup_cell({key, rev} = cell, State[tab: tab, staging_tab: staging]) do
+     case ETS.lookup(staging, cell) do
+       [{^cell, {value, _serialized}}] -> {value, rev, rev}
+       [] -> 
+         case ETS.lookup(tab, {:C, rev}) do
+          [] -> {@nil_value, rev, rev}
+          [{_, {commit_object, _}}] ->
+            {MsgPack.Map[map: map],""} = MsgPack.unpack(commit_object)
+            MsgPack.Map[map: entries] = map[CO.entries]
+            rev1 = entries[key]
+            [{_, {value, _serialized}}] = ETS.lookup(staging, {key, rev1})
+            {value, rev1, rev}
+         end
      end
    end
 

@@ -72,10 +72,10 @@ defmodule Genomu.Protocol do
   end
 
   defp handle_response(:ok) do
-    @true_value 
+    @true_value
   end
-  defp handle_response({value, clock}) do
-    value <> clock
+  defp handle_response({{value, clock}, txn}) do
+    value <> MsgPack.pack(clock) <> MsgPack.pack(txn)
   end
   defp handle_response(value) do
     value

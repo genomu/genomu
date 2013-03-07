@@ -1,5 +1,8 @@
 defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
 
+  require Genomu.Constants.CommitObject
+  alias Genomu.Constants.CommitObject, as: CO
+  
   defrecord State, entries: nil do
     record_type entries: Dict.t
   end
@@ -25,27 +28,17 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
      state.entries(lc {Genomu.Coordinator.Quorum[]=quorum, entries} inlist quorums, do: {quorum.ref, entries})}
   end
 
-  # NB: once introduced, these values
-  # should NOT change!
-  defmacrop object_key_version, do: -1
-  defmacrop object_key_n, do: 0
-  defmacrop object_key_r, do: 1
-  defmacrop object_key_vnodes, do: 2
-  defmacrop object_key_timestamp, do: 3
-  defmacrop object_key_host, do: 4
-  defmacrop object_key_entries, do: 5
-
   def message(Genomu.Transaction[] = txn, Genomu.Coordinator.Quorum[] = quorum, 
               State[entries: entries] = state) do
     entries = entries[quorum.ref]
     txn_object = [
-                   {object_key_version, 0},
-                   {object_key_n, txn.n},
-                   {object_key_r, txn.r},
-                   {object_key_vnodes, (if txn.vnodes == :any, do: 0, else: 1)},
-                   {object_key_timestamp, Genomu.Utils.now_in_microseconds},
-                   {object_key_host, Genomu.Utils.host_id},
-                   {object_key_entries, entries |> MsgPack.Map.from_list},
+                   {CO.version, 0},
+                   {CO.n, txn.n},
+                   {CO.r, txn.r},
+                   {CO.vnodes, (if txn.vnodes == :any, do: 0, else: 1)},
+                   {CO.timestamp, Genomu.Utils.now_in_microseconds},
+                   {CO.host, Genomu.Utils.host_id},
+                   {CO.entries, entries |> MsgPack.Map.from_list},
                  ] |> MsgPack.Map.from_list |> MsgPack.pack
     message = {:C, ITC.encode_binary(txn.clock), txn_object, entries, quorum.ref}
     {:ok, message, state}
