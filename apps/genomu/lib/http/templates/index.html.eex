@@ -63,7 +63,7 @@
                 <span class="caret"></span>
               </a>
               <ul class="dropdown-menu" >
-                <li ng-repeat="i in clusterMembership.instances"><a href="{{ i.url }}"><i class="halflings-icon white hdd"></i> {{ i.name }} </a></li>
+                <li ng-repeat="i in clusterMembership.instances"><a href="{{ i.url }}{{ page() }}"><i class="halflings-icon white hdd"></i> {{ i.name }} </a></li>
               </ul>
             </li>
             <!-- end: User Dropdown -->

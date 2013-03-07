@@ -49,6 +49,10 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
         $scope.instanceToAdd = '';
     }
 
+    $scope.page = function() {
+      return window.location.pathname + window.location.hash;
+    }
+
     var refresh = function() {
       $scope.instance.$get();
       $scope.cluster.$get();
