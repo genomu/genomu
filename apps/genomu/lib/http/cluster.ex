@@ -6,6 +6,7 @@ defmodule Genomu.HTTP.Cluster do
     {:upgrade, :protocol, :cowboy_rest}
   end
 
+  # Allow OPTIONS for cross-site calls
   def allowed_methods(req, state) do
     {["GET", "POST"], req, state}
   end
@@ -15,7 +16,9 @@ defmodule Genomu.HTTP.Cluster do
   end
 
   def content_types_accepted(req, state) do
-    {[{{"application","json", []}, :create_membership}], req, state}
+    {[{{"application","json", []}, :create_membership},
+     {{"application","json", [{"charset","UTF-8"}]}, :create_membership},    
+    ], req, state}
   end
 
   def post_is_create(req, state) do
@@ -41,8 +44,13 @@ defmodule Genomu.HTTP.Cluster do
 
   def create_membership("/cluster/membership", req, state) do
     {:ok, body, req} = :cowboy_req.body(req)
-    json = :jsx.to_term(body)
-    url = json["instance_url"]
+    unless body == "" do
+      json = :jsx.to_term(body)
+      url = json["instance_url"]
+    end
+    unless is_binary(url) do
+      {url, req} = :cowboy_req.qs_val("instance_url", req)
+    end
     Genomu.Cluster.join(url)
     {true, req, state}
   end
@@ -55,8 +63,14 @@ defmodule Genomu.HTTP.Cluster do
   end  
 
   def to_json(req, state) do
-    {path, req} = :cowboy_req.path(req)
-    to_json(path, req, state)
+    case :cowboy_req.qs_val("method", req) do
+      {"POST", req} ->
+        {true, req, state} = create_membership("/cluster/membership", req, state)
+        {"{}", req, state}
+      _ ->
+      {path, req} = :cowboy_req.path(req)
+      to_json(path, req, state)
+    end
   end
 
   def to_json("/cluster", req, state) do

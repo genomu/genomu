@@ -1,11 +1,13 @@
 var app = angular.module('genomuApp', ['ngResource']);
 
 
-app.controller('DashboardCtrl',function($scope, $resource, $routeParams) {
+app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, $timeout) {
     var Instance = $resource('/instance');
     var Cluster = $resource('/cluster');
     var ClusterMembership = $resource('/cluster/membership');
-    var ClusterMembershipPlan = $resource('/cluster/membership/staging');
+    var ClusterMembershipPlan = $resource('/cluster/membership/staging',{},
+                                          {commit: {method: 'POST'}});
+
     $scope.instance = Instance.get();
     $scope.cluster = Cluster.get();
     $scope.clusterMembership = ClusterMembership.get();
@@ -17,6 +19,49 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams) {
     $scope.pendingOwnership = function(instance) {
       return (instance.future_indices.length * 100 / $scope.cluster.num_partitions)
     };
+
+    $scope.findInstanceByURL = function(url) {
+        var instances = $scope.clusterMembership.instances;
+        for (var i in instances) {
+            if (instances[i].url == url) {
+                return instances[i]
+            }
+        }
+        return null;
+    }
+
+    $scope.commitPlan = function() {
+        $scope.clusterMembershipPlan.$commit();
+    }
+
+    $scope.stageJoin = function() {
+         var i = $scope.instanceToAdd;
+
+         if (i.substring(0, 6) != "http://" &&
+             i.substring(0, 7) != "https://") {
+            i = "http://" + i;
+         }
+
+       $http.jsonp(i +
+                   '/cluster/membership',
+                   {params: {instance_url: $scope.instance.instance_url, method: 'POST'}});
+
+        $scope.instanceToAdd = '';
+    }
+
+    var refresh = function() {
+      $scope.instance.$get();
+      $scope.cluster.$get();
+      $scope.clusterMembership.$get();
+      $scope.clusterMembershipPlan.$get();
+    }
+
+    var refresh_ = function() {
+        refresh();
+        $timeout(refresh_, 2500);
+    }
+
+    refresh_();
 
 });
 
