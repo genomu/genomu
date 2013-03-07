@@ -11,7 +11,8 @@ defmodule Genomu.HTTP.Instance do
   end
 
   def to_json(req, state) do
-    json = [root_channel: Genomu.Channel.clock(Genomu.Channel.Root) |> ITC.to_string,
+    json = [name: Genomu.instance_name,
+            root_channel: Genomu.Channel.clock(Genomu.Channel.Root) |> ITC.to_string,
             system_version: Genomu.system_version,
             instance_url: Genomu.instance_url,
             channels: :folsom_metrics.get_metric_value(Genomu.Metrics.Channels),

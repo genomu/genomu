@@ -23,7 +23,7 @@
                   <tbody>
                   <tr ng-repeat="i in clusterMembership.instances">
                     <td ng-bind="i.status"></td>
-                    <td><a href="{{ i.url }}" ng-bind="i.url"></a></td>
+                    <td><a href="{{ i.url }}">{{ i.name }} ({{ i.url }})</a></td>
                     <td ng-bind="ownership(i) + '%'"></td>
                     <td ng-bind="pendingOwnership(i) + '%'"></td>
                     <td ng-bind="i.node"></td>

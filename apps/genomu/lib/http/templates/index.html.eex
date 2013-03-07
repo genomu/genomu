@@ -59,11 +59,11 @@
           <ul class="nav pull-right">
             <li class="dropdown">
               <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
-                <i class="halflings-icon white hdd"></i><span ng-bind="instance.instance_url"></span>
+                <i class="halflings-icon white hdd"></i><span ng-bind="instance.name"></span>
                 <span class="caret"></span>
               </a>
               <ul class="dropdown-menu" >
-                <li ng-repeat="i in clusterMembership.instances"><a href="{{ i.url }}"><i class="halflings-icon white hdd"></i> {{ i.url }} </a></li>
+                <li ng-repeat="i in clusterMembership.instances"><a href="{{ i.url }}"><i class="halflings-icon white hdd"></i> {{ i.name }} </a></li>
               </ul>
             </li>
             <!-- end: User Dropdown -->

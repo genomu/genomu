@@ -43,6 +43,10 @@ defmodule Genomu do
     "http://#{hostname}:#{port}"
   end
 
+  def instance_name do
+    Application.environment(:genomu)[:instance_name] 
+  end
+
   @type command   :: Genomu.Command.t
 
 end

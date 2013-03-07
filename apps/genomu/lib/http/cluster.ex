@@ -70,6 +70,7 @@ defmodule Genomu.HTTP.Cluster do
     json = [instances: Enum.map(Genomu.Cluster.all_members_status,
                                 fn({node, status}) ->
                                   [url: instance_url(node),
+                                   name: :rpc.call(node, Genomu, :instance_name, []),
                                    node: node |> to_binary,
                                    status: status |> to_binary,
                                    indices: Genomu.Cluster.indices(node) |> Enum.map(&1 |> to_binary),

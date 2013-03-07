@@ -30,6 +30,7 @@ defmodule Genomu.Config do
        pid_file: config.pid_file || Path.join([config.data_dir, to_binary(config.instance_name), "genomu.pid"]),
        hostname: config.hostname,
        port: config.port,
+       instance_name: config.instance_name,
      ],
      riak_core: [
        ring_state_dir: to_char_list(Path.join([config.data_dir, to_binary(config.instance_name), "ring"])),
