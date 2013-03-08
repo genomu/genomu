@@ -11,9 +11,15 @@ defmodule Genomu.Module.List do
     {head, _tail} = MsgPack.next(rest)
     head
   end
+  def head(MsgPack.array16(len: 0, rest: _rest), _no_arg) do
+    @empty_value
+  end
   def head(MsgPack.array16(rest: rest), _no_arg) do
     {head, _tail} = MsgPack.next(rest)
     head
+  end
+  def head(MsgPack.array32(len: 0, rest: _rest), _no_arg) do
+    @empty_value
   end
   def head(MsgPack.array32(rest: rest), _no_arg) do
     {head, _tail} = MsgPack.next(rest)
@@ -96,6 +102,10 @@ defmodule Genomu.Module.List do
 
   def length(MsgPack.array32(len: len), _no_arg) do
     MsgPack.pack(len)
+  end
+
+  def length(MsgPack.atom_nil(len: len), _no_arg) do
+    MsgPack.pack(0)
   end
 
   @args 1

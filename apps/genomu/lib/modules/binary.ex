@@ -42,9 +42,19 @@ defmodule Genomu.Module.Binary do
   end
 
   @args 0
-  def size(value, _) do
-    MsgPack.pack(byte_size(value))
+  def size(MsgPack.fix_raw(len: len), _) do
+    MsgPack.pack(len)
   end
+  def size(MsgPack.raw16(len: len), _) do
+    MsgPack.pack(len)
+  end
+  def size(MsgPack.raw32(len: len), _) do
+    MsgPack.pack(len)
+  end
+  def size(MsgPack.atom_nil, _) do
+    MsgPack.pack(0)
+  end
+
 
   defp extract_bin(MsgPack.atom_nil), do: ""
   defp extract_bin(MsgPack.fix_raw(value: value)), do: value
