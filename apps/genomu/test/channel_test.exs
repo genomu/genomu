@@ -63,4 +63,27 @@ defmodule Genomu.ChannelTest do
     assert Ch.get(ch, ["ctr"], API.Core.identity) == 3
   end
 
+  test "channel retrieving a key at a specified version", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    {"123", vsn} = Ch.set(ch, ["some"], API.Core.identity("123"), version: true)
+    C.commit(ch)
+
+    {:ok, ch} = C.begin(conn)
+    assert Ch.get(ch, {["some"], vsn}, API.Core.identity, version: true) == {"123", vsn}
+  end
+
+  test "channel retrieving a key at a specified upper bound version", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    {"123", vsn0} = Ch.set(ch, ["some1"], API.Core.identity("123"), version: true)
+    {"123", vsn} = Ch.set(ch, ["some2"], API.Core.identity("123"), version: true)
+    C.commit(ch)
+
+    {:ok, ch} = C.begin(conn)
+    assert Ch.get(ch, {["some1"], vsn}, API.Core.identity, version: true, txn: true) == {"123", vsn0, vsn}
+  end
+
 end
