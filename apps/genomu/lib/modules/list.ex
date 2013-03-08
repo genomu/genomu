@@ -153,4 +153,31 @@ defmodule Genomu.Module.List do
     end
   end
 
+  @args 1
+  def reduce(MsgPack.fix_array(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    {_, _, acc0} = op
+    reduce_(rest, op, acc0)
+  end
+  def reduce(MsgPack.array16(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    {_, _, acc0} = op
+    reduce_(rest, op, acc0)
+  end
+  def reduce(MsgPack.array32(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    {_, _, acc0} = op
+    reduce_(rest, op, acc0)
+  end
+
+  defp reduce_("", _, acc), do: acc
+  defp reduce_(bin, {m,f, _} = op, acc) do
+    {value, rest} = MsgPack.next(bin)
+    new_value = Genomu.Operation.apply({m, f, acc}, value)
+    reduce_(rest, op, new_value)
+  end
+
 end
