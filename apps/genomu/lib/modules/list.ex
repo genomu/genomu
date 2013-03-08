@@ -122,4 +122,35 @@ defmodule Genomu.Module.List do
     map_(rest, op, acc <> result)
   end
 
+  @args 1
+  def filter(MsgPack.fix_array(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    {len, filtered} = filter_(rest, op, 0, "")
+    MsgPack.fix_array(len: len, rest: filtered)
+  end
+  def filter(MsgPack.array16(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    {len, filtered} = filter_(rest, op, 0, "")
+    MsgPack.array16(len: len, rest: filtered)
+  end
+  def filter(MsgPack.array32(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    {len, filtered} = filter_(rest, op, 0, "")
+    MsgPack.array32(len: len, rest: filtered)
+  end
+
+  defp filter_("", _, len, acc), do: {len, acc}
+  defp filter_(bin, op, len, acc) do
+    {value, rest} = MsgPack.next(bin)
+    case Genomu.Operation.apply(op, value) do
+      MsgPack.atom_true ->
+        filter_(rest, op, len + 1, acc <> value)
+      MsgPack.atom_false ->
+        filter_(rest, op, len, acc)
+    end
+  end
+
 end
