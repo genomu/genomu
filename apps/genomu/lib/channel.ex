@@ -2,6 +2,8 @@ defmodule Genomu.Channel do
   use GenServer.Behaviour
   import GenX.GenServer
 
+  require Lager
+
   @spec start :: {:ok, pid} | {:error, reason :: term}
   def start do
     Genomu.Channel.fork Genomu.Channel.Root
@@ -22,13 +24,13 @@ defmodule Genomu.Channel do
 
   defrecord State, root: false, parent: nil,
                    clock: nil, crash_clock: nil,
-                   outstanding: nil,
+                   outstanding: [],
                    snapshot: nil, log: [],
                    children: nil do
 
     record_type root: atom | boolean, parent: nil | Genomu.gen_server_ref,
                 clock: nil | ITC.t, crash_clock: nil | ITC.t,
-                outstanding: nil | ITC.t,
+                outstanding: [ITC.t],
                 snapshot: nil | :ets.tid, log: [Genomu.Transaction.entry],
                 children: nil | :ets.tid
 
@@ -51,11 +53,8 @@ defmodule Genomu.Channel do
       state.outstanding(new)
     end
     def join_outstanding(new, __MODULE__[outstanding: clock] = state) do
-      try do
-        state.outstanding(ITC.join(clock, new))
-      catch _, _ -> # if we can't join, then we already did                    
-        state
-      end
+      Lager.info "join_outstanding #{inspect new} #{inspect clock}"
+      state.outstanding(ITC.join(clock, new))
     end
 
     defoverridable crash_clock: 2
@@ -130,7 +129,7 @@ defmodule Genomu.Channel do
     :ets.insert(state.children,
                 [{channel, channel_clock},
                  {channel_clock, channel}])
-    state = state.clock(new_clock).join_outstanding(channel_clock)
+    state = state.clock(new_clock).update_outstanding([channel_clock|&1])
     {:reply, {:ok, channel}, state}
   end
 
@@ -161,22 +160,23 @@ defmodule Genomu.Channel do
       [{^channel, clock}] ->
         :ets.insert(c, [{channel, new_clock}, {new_clock, channel}])
         :ets.delete(c, clock)
+        state = state.update_outstanding(fn(o) -> [new_clock|o] -- [clock] end)
       [] -> 
         :ok # TODO: log a warning?
     end
-    {:noreply, state.join_outstanding(new_clock)}
+    {:noreply, state}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, _},
-                  __MODULE__.State[clock: clock, children: c] = state) do
+                  __MODULE__.State[clock: clock, crash_clock: crash_clock, children: c] = state) do
     [{^pid, child_clock}] = :ets.lookup(c, pid)
     :ets.delete(c, pid)
     :ets.delete(c, child_clock)
-    new_clock = ITC.join(clock, child_clock)
-    crash_clock = ITC.join(clock, state.outstanding)
-    state = state.clock(new_clock).crash_clock(crash_clock)
+    clock = ITC.join(clock, child_clock)
+    state = state.clock(clock).update_outstanding(fn(o) -> o -- [child_clock] end)
+    state = state.crash_clock(Enum.reduce(state.outstanding, clock, fn(c, c1) -> ITC.join(c, c1) end))
     {:noreply, state}
-  end  
+  end
 
   @spec execute(pid, Genomu.key | Genomu.cell, Genomu.command, Keyword.t) :: term
   defcall execute(key, cmd, options), state: State[] = state do
