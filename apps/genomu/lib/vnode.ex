@@ -102,7 +102,7 @@ defmodule Genomu.VNode do
                      if k == key do
                        [{_, {_, serialized}}] = ETS.lookup(staging, {key, r})
                        {op, ""} = Genomu.Operation.deserialize(serialized)
-                       nv = apply_operation(op, value)
+                       nv = apply_operation(op, v)
                        ETS.insert(staging, {{key, r}, {nv, serialized}})
                        nv
                      else

@@ -15,7 +15,7 @@ defmodule Genomu.Operation do
     operation_id = Genomu.Module.operation(module, {:name, operation})[:id]
     [MsgPack.pack(module_id),
      MsgPack.pack(operation_id),
-     MsgPack.pack(argument)] |> iolist_to_binary
+     argument] |> iolist_to_binary
   end
 
   @spec deserialize(binary) :: {t, binary}
