@@ -28,6 +28,13 @@
               <div class="title"><span class="color blue"></span>Channels</div>
             </div>
           </div>
+
+          <div class="stat">
+            <div class="left">
+              <div class="number red" ng-bind="instance.partitions.length">0</div>
+              <div class="title"><span class="color red"></span>Partitions</div>
+            </div>
+          </div>
           
             
         </div>
