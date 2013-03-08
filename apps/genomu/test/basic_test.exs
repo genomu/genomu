@@ -1,6 +1,6 @@
 Code.require_file "../test_helper.exs", __FILE__
 
-defmodule Genomu.ChannelTest do
+defmodule Genomu.BasicTest do
   use Genomu.TestCase
 
   alias Genomu.Client, as: C
