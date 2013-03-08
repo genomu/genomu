@@ -175,21 +175,31 @@ defmodule Genomu.VNode do
        _ -> {@nil_value, "", ""}
      end
    end
-   defp lookup_cell({key, rev} = cell, State[tab: tab, staging_tab: staging]) do
+   defp lookup_cell({_key, rev} = cell, State[staging_tab: staging] = state) do
      case ETS.lookup(staging, cell) do
        [{^cell, {value, _serialized}}] -> {value, rev, rev}
-       [] -> 
-         case ETS.lookup(tab, {:C, rev}) do
-          [] -> {@nil_value, "", ""}
-          [{_, {commit_object, _}}] ->
-            {MsgPack.Map[map: map],""} = MsgPack.unpack(commit_object)
-            MsgPack.Map[map: entries] = map[CO.entries]
-            rev1 = entries[key]
-            [{_, {value, _serialized}}] = ETS.lookup(staging, {key, rev1})
-            {value, rev1, rev}
-         end
+       [] ->
+         lookup_cell_txn(cell, state)
      end
    end
+
+   defp lookup_cell_txn({key, rev}, State[tab: tab, staging_tab: staging]) do
+     case ETS.lookup(tab, key) do
+       [] ->
+         {@nil_value, "", ""}
+       [{_key, {value, [{entry_clock, ^rev}|_]}}] ->
+         {value, entry_clock, rev}
+       [{_key, {_, history}}] ->
+         {entry_clock, txn_rev} = Enum.find(history, fn({entry_clock, _}) -> 
+                                                         entry_clock == rev or
+                                                         ITC.decode(entry_clock) |>
+                                                         ITC.le(ITC.decode(rev))
+                                                     end)
+         [{_, {value, _serialized}}] = ETS.lookup(staging, {key, entry_clock})
+         {value, entry_clock, txn_rev}
+     end
+   end
+
 
    @spec stage(Genomu.cell, Genomu.Operation.serialized, value :: term, State.t) :: State.t
    defp stage(cell, serialized, value, State[staging_tab: tab] = state) do
