@@ -190,13 +190,17 @@ defmodule Genomu.VNode do
        [{_key, {value, [{entry_clock, ^rev}|_]}}] ->
          {value, entry_clock, rev}
        [{_key, {_, history}}] ->
-         {entry_clock, txn_rev} = Enum.find(history, fn({entry_clock, _}) -> 
+         case Enum.find(history, fn({entry_clock, _}) -> 
                                                          entry_clock == rev or
                                                          ITC.decode(entry_clock) |>
                                                          ITC.le(ITC.decode(rev))
-                                                     end)
-         [{_, {value, _serialized}}] = ETS.lookup(staging, {key, entry_clock})
-         {value, entry_clock, txn_rev}
+                                                     end) do
+           {entry_clock, txn_rev} ->
+             [{_, {value, _serialized}}] = ETS.lookup(staging, {key, entry_clock})
+             {value, entry_clock, txn_rev}
+           nil ->
+             {@nil_value, "", ""}
+         end
      end
    end
 
