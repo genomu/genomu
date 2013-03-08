@@ -98,4 +98,28 @@ defmodule Genomu.Module.List do
     MsgPack.pack(len)
   end
 
+  @args 1
+  def map(MsgPack.fix_array(len: len, rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    MsgPack.fix_array(len: len, rest: map_(rest, op, ""))
+  end
+  def map(MsgPack.array16(len: len, rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    MsgPack.array16(len: len, rest: map_(rest, op, ""))
+  end
+  def map(MsgPack.array32(len: len, rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    MsgPack.array32(len: len, rest: map_(rest, op, ""))
+  end
+
+  defp map_("", _, acc), do: acc
+  defp map_(bin, op, acc) do
+    {value, rest} = MsgPack.next(bin)
+    result = Genomu.Operation.apply(op, value)
+    map_(rest, op, acc <> result)
+  end
+
 end
