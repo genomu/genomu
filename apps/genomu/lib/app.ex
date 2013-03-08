@@ -64,6 +64,7 @@ defmodule Genomu.App do
   end
 
   defp modules, do: [Genomu.Module.Core, Genomu.Module.Binary,
-                     Genomu.Module.List, Genomu.Module.Dict, Genomu.Module.Boolean]
+                     Genomu.Module.List, Genomu.Module.Dict, Genomu.Module.Boolean,
+                     Genomu.Module.Number]
 
 end
