@@ -7,8 +7,9 @@ defmodule Genomu.TestCase do
   @handoff_port 18099
   @port 19101
 
-  using(_) do
+  using(options) do
     quote do
+      @options unquote(options)
       import Genomu.TestCase
     end
   end
@@ -61,6 +62,10 @@ defmodule Genomu.TestCase do
 
   def stop_db do
     Application.stop(:genomu)
+    Application.stop(:cowboy)
+    Application.stop(:ranch)
+    :code.delete Genomu.Commands
+    :code.purge Genomu.Commands
     data_dir = Path.expand("../.test",__FILE__)
     File.rm_rf(data_dir)
     :net_kernel.stop
