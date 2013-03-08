@@ -51,8 +51,15 @@ defmodule Genomu.Mixfile do
        {:ranch,       github: "extend/ranch", tag: "0.6.1"},
      {:hackney,       github: "benoitc/hackney"},
        {:mimetypes,   github: "spawngrid/mimetypes"},
+    ] ++ deps(Mix.env)
+  end
+
+  defp deps(:test) do
+    [
+     {:genomu_client, github: "genomu/genomu-elixir"},
     ]
   end
+  defp deps(_), do: []
 
   defp root do
     Path.join([Path.dirname(__FILE__), "..", ".."]) |> Path.expand

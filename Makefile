@@ -38,5 +38,6 @@ remsh3:
 clean:
 	@cd apps/genomu && $(genomu_path) mix clean
 
-test: apps/genomu/ebin
+test:
+	@cd apps/genomu && $(genomu_path) GENOMU_PATH=`pwd` MIX_ENV=test mix deps.get
 	@cd apps/genomu && $(genomu_path) MIX_ENV=test mix test --no-start

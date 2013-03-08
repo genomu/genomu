@@ -6,6 +6,7 @@
   "exmsgpack": {:git,"https://github.com/yrashk/exmsgpack.git","059f4bc8e03f39e70bf5701f11ee0c7d0c1f5ac5",[]},
   "exreloader": {:git,"https://github.com/yrashk/exreloader.git","0698218d917d731a267be929fcfac07782b5a74c",[]},
   "folsom": {:git,"https://github.com/boundary/folsom.git","f694abf41030c0612b5777a42a8d60d2b78f5f47",[]},
+  "genomu_client": {:git,"https://github.com/genomu/genomu-elixir.git","f1fc38b17319eb8968eda2f2d23496e91f7fb135",[]},
   "genx": {:git,"https://github.com/yrashk/genx.git","85fc66c93e5e5711635e5d031a4031538b295ce0",[]},
   "hackney": {:git,"https://github.com/benoitc/hackney.git","88a7d65542fdd4f06e359d499da397d92825f054",[]},
   "jsx": {:git,"https://github.com/talentdeficit/jsx.git","cb14b92a228e51f7bdcaa7eb17f035e4a5c0b47d",[]},
