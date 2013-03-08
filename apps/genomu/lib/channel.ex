@@ -168,7 +168,7 @@ defmodule Genomu.Channel do
   end
 
   def handle_info({:DOWN, _ref, :process, pid, _},
-                  __MODULE__.State[clock: clock, crash_clock: crash_clock, children: c] = state) do
+                  __MODULE__.State[clock: clock, children: c] = state) do
     [{^pid, child_clock}] = :ets.lookup(c, pid)
     :ets.delete(c, pid)
     :ets.delete(c, child_clock)
