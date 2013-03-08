@@ -14,7 +14,7 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
   def quorums(Genomu.Transaction[log: log, 
                                  n: n, r: r, vnodes: vnodes] = txn, State[] = state) do
     quorums = 
-    Enum.reduce(Enum.reverse(log), HashDict.new,
+    Enum.reduce(log, HashDict.new,
                 fn({key, clock}, dict) ->
                    preflist = get_preflist(key, txn)
                    ref = make_ref

@@ -195,7 +195,7 @@ defmodule Genomu.Channel do
   @spec commit(Genomu.gen_server_ref) :: :ok | {:error, reason :: term}
   defcall commit, state: State[parent: parent, clock: clock, log: log] = state do
     clock = sync(parent, clock)
-    txn = Genomu.Transaction.new(clock: clock, log: log)
+    txn = Genomu.Transaction.new(clock: clock, log: Enum.reverse(log))
     Genomu.Coordinator.run(for: txn)
     update(parent, self, clock)
     stop(self)

@@ -20,6 +20,8 @@ defmodule Genomu.VNode do
    @nil_value MsgPack.pack(nil)
 
    require Lager
+   require Genomu.Constants.CommitObject
+   alias Genomu.Constants.CommitObject, as: CO
 
    defrecord State, partition: nil,
                     tab: nil, staging_tab: nil do
@@ -87,12 +89,26 @@ defmodule Genomu.VNode do
 
    def handle_command({:C, clock, commit_object, entries, ref}, _sender, 
                       State[tab: tab, staging_tab: staging] = state) do
-     lc {key, entry_clock} = entry inlist entries do
+     lc {key, entry_clock} inlist entries do
        case ETS.lookup(tab, key) do
-         [] -> history = []
-         [{^key, {_value, history}}] -> :ok
+         [] -> history = []; value = @nil_value
+         [{^key, {value, history}}] -> :ok
        end
-       [{^entry, {value, _serialized}}] = ETS.lookup(staging, entry)
+       {MsgPack.Map[map: commit_object_dict], ""} = MsgPack.unpack(commit_object)
+       MsgPack.Map[map: log] = commit_object_dict[CO.log]
+       value =
+       Enum.reduce(log, value,
+                   fn({k, r}, v) ->
+                     if k == key do
+                       [{_, {_, serialized}}] = ETS.lookup(staging, {key, r})
+                       {op, ""} = Genomu.Operation.deserialize(serialized)
+                       nv = apply_operation(op, value)
+                       ETS.insert(staging, {{key, r}, {nv, serialized}})
+                       nv
+                     else
+                       v
+                     end
+                   end)
        ETS.insert(tab, {key, {value, [{entry_clock, clock}|history]}})
      end
      ETS.insert(tab, {{:C, clock}, {commit_object, [clock]}})
@@ -164,9 +180,6 @@ defmodule Genomu.VNode do
 
    def terminate(_, State[]) do
    end
-
-   require Genomu.Constants.CommitObject
-   alias Genomu.Constants.CommitObject, as: CO
 
    @spec lookup_cell(Genomu.cell, State.t) :: {term, ITC.t | term, ITC.t | term}
    defp lookup_cell({key, nil}, State[tab: tab]) do
