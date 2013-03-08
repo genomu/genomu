@@ -7,7 +7,8 @@ defmodule Genomu.Module.Core do
   end
 
   @args 1
-  def set(_value, new_value) do
+  @name :identity
+  def set_identity(_value, new_value) do
     new_value
   end
 
