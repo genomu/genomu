@@ -88,8 +88,8 @@
              </table>
              <div class="row-fluid">
                <div class="pull-right">
-                 <button class="btn3d btn-large btn-danger" ng-click="discardPlan()">Discard</button>
-                 <button class="btn3d btn-large btn-success" ng-click="commitPlan()">Commit</button>
+                 <button ui-if="clusterMembershipPlan.plan.transitions > 0" class="btn3d btn-large btn-danger" ng-click="discardPlan()">Discard</button>
+                 <button ui-if="clusterMembershipPlan.plan.transitions > 0" class="btn3d btn-large btn-success" ng-click="commitPlan()">Commit</button>
                </div>
             </div>
 
