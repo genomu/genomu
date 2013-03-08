@@ -87,7 +87,7 @@ defmodule Genomu.Channel do
     @spec memoize(Genomu.key, t) :: t
     def memoize(key, __MODULE__[snapshot: snapshot, clock: clock, log: log] = state) do
       :ets.insert(snapshot, {key, clock})
-      state.log([{key, clock}|log])
+      state.log([{key, ITC.encode_binary(clock)}|log])
     end
 
     @spec lookup(Genomu.key, t) :: nil | ITC.t
@@ -195,7 +195,7 @@ defmodule Genomu.Channel do
   @spec commit(Genomu.gen_server_ref) :: :ok | {:error, reason :: term}
   defcall commit, state: State[parent: parent, clock: clock, log: log] = state do
     clock = sync(parent, clock)
-    txn = Genomu.Transaction.new(clock: clock, log: Enum.reverse(log))
+    txn = Genomu.Transaction.new(clock: clock, log: log)
     Genomu.Coordinator.run(for: txn)
     update(parent, self, clock)
     stop(self)

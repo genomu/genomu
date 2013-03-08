@@ -14,13 +14,13 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
   def quorums(Genomu.Transaction[log: log, 
                                  n: n, r: r, vnodes: vnodes] = txn, State[] = state) do
     quorums = 
-    Enum.reduce(log, HashDict.new,
+    Enum.reduce(Enum.reverse(log), HashDict.new,
                 fn({key, clock}, dict) ->
                    preflist = get_preflist(key, txn)
                    ref = make_ref
                    quorum = Genomu.Coordinator.Quorum.new(ref: ref, 
                             n: n, r: r, vnodes: vnodes, preflist: preflist)
-                   entry = {key, ITC.encode_binary(clock)}
+                   entry = {key, clock}
                    Dict.update(dict, quorum, [entry], [entry|&1])
                 end) |> Dict.to_list
     {:ok,
@@ -28,7 +28,7 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
      state.entries(lc {Genomu.Coordinator.Quorum[]=quorum, entries} inlist quorums, do: {quorum.ref, entries})}
   end
 
-  def message(Genomu.Transaction[] = txn, Genomu.Coordinator.Quorum[] = quorum, 
+  def message(Genomu.Transaction[log: log] = txn, Genomu.Coordinator.Quorum[] = quorum, 
               State[entries: entries] = state) do
     entries = entries[quorum.ref]
     txn_object = [
@@ -38,7 +38,7 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
                    {CO.vnodes, (if txn.vnodes == :any, do: 0, else: 1)},
                    {CO.timestamp, Genomu.Utils.now_in_microseconds},
                    {CO.host, Genomu.Utils.host_id},
-                   {CO.entries, entries |> MsgPack.Map.from_list},
+                   {CO.log, MsgPack.Map.from_list(log)},
                  ] |> MsgPack.Map.from_list |> MsgPack.pack
     message = {:C, ITC.encode_binary(txn.clock), txn_object, entries, quorum.ref}
     {:ok, message, state}

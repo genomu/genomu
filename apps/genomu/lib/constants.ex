@@ -6,6 +6,6 @@ defmodule Genomu.Constants do
     defmacro vnodes, do: 2
     defmacro timestamp, do: 3
     defmacro host, do: 4
-    defmacro entries, do: 5
+    defmacro log, do: 5
   end
 end
