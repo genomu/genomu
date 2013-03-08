@@ -115,14 +115,6 @@ defmodule Genomu.VNode do
      {:reply, {:ok, ref, state.partition, :ok}, state}
    end
 
-   def handle_command({:c, clock, ref}, _sender, State[tab: tab] = state) do
-     case ETS.lookup(tab, {:C, clock}) do
-       [] -> {:reply, {:ok, ref, state.partition, nil}, state}
-       [{_, {commit_object, _}}] -> {:reply, {:ok, ref, state.partition, commit_object}, state}
-     end
-   end
-
-
    @spec handle_handoff_command(term, sender, State.t) ::
          {:reply, term, State.t} |
          {:noreply, State.t} |
