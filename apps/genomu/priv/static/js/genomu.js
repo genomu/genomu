@@ -69,6 +69,12 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                 return instances[i]
             }
         }
+        var instances = $scope.clusterDiscovery.announced;
+        for (var i in instances) {
+            if (instances[i].url == url) {
+                return instances[i]
+            }
+        }
         return null;
     }
 

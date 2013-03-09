@@ -52,7 +52,7 @@
               </thead>
               <tbody>
                 <tr style="cursor: pointer" ng-repeat="i in availableInstances()" ng-click="join(i)">
-                  <td>{{ i }}</td>
+                  <td>{{ findInstanceByURL(i).name }} ({{ i }})</td>
                 </tr>
               </tbody>
             </table>
