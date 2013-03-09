@@ -48,15 +48,6 @@ defmodule Genomu.Channel do
       state
     end
 
-    @spec join_outstanding(ITC.t, t) :: t
-    def join_outstanding(new, __MODULE__[outstanding: nil] = state) do
-      state.outstanding(new)
-    end
-    def join_outstanding(new, __MODULE__[outstanding: clock] = state) do
-      Lager.info "join_outstanding #{inspect new} #{inspect clock}"
-      state.outstanding(ITC.join(clock, new))
-    end
-
     defoverridable crash_clock: 2
     def crash_clock(new_crash_clock, state) do
       dump_crash_clock(super(new_crash_clock, state))
