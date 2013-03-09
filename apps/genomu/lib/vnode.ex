@@ -13,7 +13,7 @@ defmodule Genomu.VNode do
 
    @type command :: {Genomu.cell, Genomu.revision, Genomu.command,
                      Genomu.Coordinator.ref}
-   @type commit :: {:C, ITC.t, binary, [Genomu.Transaction.entry], Genomu.Coordinator.ref}
+   @type commit :: {:C, ITC.t, term, [Genomu.Transaction.entry], Genomu.Coordinator.ref}
 
    @typep fold_req :: {:riak_core_fold_req_v1, ((term, term) -> term), term}
 
@@ -106,7 +106,7 @@ defmodule Genomu.VNode do
          [{_, page}] ->
            [{_, {page_ctr, {value, history}}}] = ETS.lookup(tab, {key, page})
        end
-       {MsgPack.Map[map: commit_object_dict], ""} = MsgPack.unpack(commit_object)
+       MsgPack.Map[map: commit_object_dict] = commit_object
        MsgPack.Map[map: log] = commit_object_dict[CO.log]
        value =
        Enum.reduce(log, value,
@@ -129,7 +129,7 @@ defmodule Genomu.VNode do
                           {{key, page + 1}, {1, {value, [{{entry_clock, clock}}]}}}])
        end
      end
-     ETS.insert(commit_tab, {{:C, clock}, {commit_object, [clock]}})
+     ETS.insert(commit_tab, {{:C, clock}, {MsgPack.pack(commit_object), [clock]}})
      {:reply, {:ok, ref, state.partition, :ok}, state}
    end
 

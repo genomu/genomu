@@ -47,7 +47,7 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
                    {CO.timestamp, Genomu.Utils.now_in_microseconds},
                    {CO.host, Genomu.Utils.host_id},
                    {CO.log, MsgPack.Map.from_list(log)},
-                 ] |> MsgPack.Map.from_list |> MsgPack.pack
+                 ] |> MsgPack.Map.from_list
     message = {:C, ITC.encode_binary(txn.clock), txn_object, entries, quorum.ref}
     {:ok, message, state}
   end
