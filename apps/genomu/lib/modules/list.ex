@@ -220,6 +220,27 @@ defmodule Genomu.Module.List do
   end
 
   @args 1
+  def member?(MsgPack.fix_array(rest: rest), v) do
+    member_(rest, v)
+  end
+  def member?(MsgPack.array16(rest: rest), v) do
+    member_(rest, v)
+  end
+  def member?(MsgPack.array32(rest: rest), v) do
+    member_(rest, v)
+  end
+
+  defp member_("", _), do: @false_value
+  defp member_(bin, v) do
+    {value, rest} = MsgPack.next(bin)
+    case value do
+      ^v -> @true_value
+      _ -> 
+        member_(rest, v)
+    end
+  end
+
+  @args 1
   def all?(MsgPack.fix_array(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
     {op, ""} = Genomu.Operation.deserialize(op)
