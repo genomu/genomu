@@ -62,7 +62,9 @@ defmodule Genomu.DNSSD do
   def handle_info({:dnssd, ref, {:resolve, {domain, port, txt}}},
                   State[instances: instances] = state) do
     SD.stop(ref)
-    :ets.insert(instances, {{domain, port}, txt})
+    if txt["cluster_name"] == Genomu.Cluster.name do
+      :ets.insert(instances, {{domain, port}, txt})
+    end
     {:noreply, state}
   end
 
