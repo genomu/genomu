@@ -24,9 +24,10 @@ defmodule Genomu.VNode do
    alias Genomu.Constants.CommitObject, as: CO
 
    defrecord State, partition: nil,
-                    tab: nil, staging_tab: nil do
+                    tab: nil, staging_tab: nil, commit_tab: nil do
      record_type    partition: Genomu.VNode.partition,
-                    tab: :ets.tid, staging_tab: :ets.tid
+                    tab: :ets.tid, staging_tab: :ets.tid,
+                    commit_tab: :ets.tid
    end
 
    @spec start_vnode(integer | [integer]) :: {:ok, pid}
@@ -39,7 +40,9 @@ defmodule Genomu.VNode do
      :erlang.process_flag(:trap_exit, true)
      tab = ETS.new(__MODULE__, [:ordered_set])
      staging_tab = ETS.new(__MODULE__.Staging, [:ordered_set])
-     {:ok, State.new(partition: partition, tab: tab, staging_tab: staging_tab)}
+     commit_tab = ETS.new(__MODULE__.Commit, [])
+     {:ok, State.new(partition: partition, tab: tab, staging_tab: staging_tab,
+                     commit_tab: commit_tab)}
    end
 
    @spec handle_command(fold_req | command | commit, sender, State.t) ::
@@ -88,7 +91,7 @@ defmodule Genomu.VNode do
    end
 
    def handle_command({:C, clock, commit_object, entries, ref}, _sender, 
-                      State[tab: tab, staging_tab: staging] = state) do
+                      State[tab: tab, staging_tab: staging, commit_tab: commit_tab] = state) do
      lc {key, entry_clock} inlist entries do
        case ETS.lookup(tab, key) do
          [] -> history = []; value = @nil_value
@@ -111,7 +114,7 @@ defmodule Genomu.VNode do
                    end)
        ETS.insert(tab, {key, {value, [{entry_clock, clock}|history]}})
      end
-     ETS.insert(tab, {{:C, clock}, {commit_object, [clock]}})
+     ETS.insert(commit_tab, {{:C, clock}, {commit_object, [clock]}})
      {:reply, {:ok, ref, state.partition, :ok}, state}
    end
 
