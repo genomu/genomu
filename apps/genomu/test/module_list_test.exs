@@ -77,5 +77,14 @@ defmodule Genomu.Module.ListTest do
     assert Ch.get(ch, ["key"], API.List.reduce(API.Number.incr(1))) == 16
   end
 
+  test "any?", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    Ch.set(ch, ["key"], API.Core.identity([1,2,3,4,5]))
+    assert Ch.get(ch, ["key"], API.List.any?(API.Boolean.equals?(2))) == true
+    assert Ch.get(ch, ["key"], API.List.any?(API.Boolean.equals?(100))) == false
+  end
+
 
 end

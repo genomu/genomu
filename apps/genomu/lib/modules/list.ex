@@ -2,6 +2,8 @@ defmodule Genomu.Module.List do
   use Genomu.Module, id: 2, name: :list
 
   @empty_value MsgPack.pack([])
+  @true_value MsgPack.pack(true)
+  @false_value MsgPack.pack(false)
 
   @args 0
   def head(MsgPack.fix_array(len: 0, rest: _rest), _no_arg) do
@@ -188,6 +190,33 @@ defmodule Genomu.Module.List do
     {value, rest} = MsgPack.next(bin)
     new_value = Genomu.Operation.apply({m, f, acc}, value)
     reduce_(rest, op, new_value)
+  end
+
+  @args 1
+  def any?(MsgPack.fix_array(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    any_(rest, op)
+  end
+  def any?(MsgPack.array16(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    any_(rest, op)
+  end
+  def any?(MsgPack.array32(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    any_(rest, op)
+  end
+
+  defp any_("", _), do: @false_value
+  defp any_(bin, op) do
+    {value, rest} = MsgPack.next(bin)
+    case Genomu.Operation.apply(op, value) do
+      MsgPack.atom_true -> @true_value
+      MsgPack.atom_false -> 
+        any_(rest, op)
+    end
   end
 
 end
