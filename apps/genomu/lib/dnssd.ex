@@ -6,9 +6,10 @@ defmodule Genomu.DNSSD do
     :gen_server.start_link({:local, __MODULE__}, __MODULE__, [], [])
   end
 
-  defrecord State, browser: nil, instances: nil
+  defrecord State, registration: nil, browser: nil, instances: nil
 
   def init(_) do
+    :erlang.process_flag(:trap_exit, true)
     :gen_server.cast(self, :announce)
     :gen_server.cast(self, :browse)
     {:ok, State.new(instances: :ets.new(__MODULE__, []))}
@@ -26,8 +27,9 @@ defmodule Genomu.DNSSD do
     {:reply, result, state}
   end
 
-  def handle_cast(:announce, state) do
+  def handle_cast(:announce, State[] = state) do
     env = Application.environment(:genomu)
+    {:ok, ref} =
     SD.register(Genomu.instance_url,
                 "_genomu._tcp", env[:port],
                 [
@@ -36,7 +38,7 @@ defmodule Genomu.DNSSD do
                   url: Genomu.instance_url,
                   cluster_name: Genomu.Cluster.name,
                 ])
-    {:noreply, state}
+    {:noreply, state.registration(ref)}
   end
 
   def handle_cast(:browse, State[] = state) do
@@ -69,6 +71,10 @@ defmodule Genomu.DNSSD do
   end
   def handle_info({:dnssd, _, {:register, :remove, _}}, state) do
     {:noreply, state}
+  end
+
+  def terminate(_, State[registration: ref]) do
+    SD.stop(ref)
   end
 
 end
