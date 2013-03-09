@@ -19,6 +19,8 @@ defmodule Genomu.VNode do
 
    @nil_value MsgPack.pack(nil)
 
+   @object_page_size 32
+
    require Lager
    require Genomu.Constants.CommitObject
    alias Genomu.Constants.CommitObject, as: CO
@@ -94,8 +96,14 @@ defmodule Genomu.VNode do
                       State[tab: tab, staging_tab: staging, commit_tab: commit_tab] = state) do
      lc {key, entry_clock} inlist entries do
        case ETS.lookup(tab, key) do
-         [] -> history = []; value = @nil_value
-         [{^key, {value, history}}] -> :ok
+         [] -> 
+           page = 0
+           case ETS.lookup(tab, {key, page}) do
+             [] ->  history = []; value = @nil_value ; page_ctr = 0
+             [{_, {page_ctr, {value, history}}}] -> :ok
+           end
+         [{_, page}] ->
+           [{_, {page_ctr, {value, history}}}] = ETS.lookup(tab, {key, page})
        end
        {MsgPack.Map[map: commit_object_dict], ""} = MsgPack.unpack(commit_object)
        MsgPack.Map[map: log] = commit_object_dict[CO.log]
@@ -112,7 +120,13 @@ defmodule Genomu.VNode do
                        v
                      end
                    end)
-       ETS.insert(tab, {key, {value, [{entry_clock, clock}|history]}})
+       if page_ctr <= @object_page_size do
+         ETS.insert(tab, {{key, page}, {page_ctr + 1, {value, [{entry_clock, clock}|history]}}})
+       else
+         # allocate a new page
+         ETS.insert(tab, [{key, page + 1},
+                          {{key, page + 1}, {1, {value, [{{entry_clock, clock}}]}}}])
+       end
      end
      ETS.insert(commit_tab, {{:C, clock}, {commit_object, [clock]}})
      {:reply, {:ok, ref, state.partition, :ok}, state}
@@ -179,7 +193,11 @@ defmodule Genomu.VNode do
    @spec lookup_cell(Genomu.cell, State.t) :: {term, ITC.t | term, ITC.t | term}
    defp lookup_cell({key, nil}, State[tab: tab]) do
      case ETS.lookup(tab, key) do
-       [{^key, {value, [{clock, txn_clock}|_history]}}] -> {value, clock, txn_clock}
+       [] -> page = 0
+       [{_, page}] -> :ok
+     end
+     case ETS.lookup(tab, {key, page}) do
+       [{_, {_, {value, [{clock, txn_clock}|_history]}}}] -> {value, clock, txn_clock}
        _ -> {@nil_value, "", ""}
      end
    end
@@ -191,13 +209,20 @@ defmodule Genomu.VNode do
      end
    end
 
-   defp lookup_cell_txn({key, rev}, State[tab: tab, staging_tab: staging]) do
+   defp lookup_cell_txn({key, _} = cell, State[tab: tab] = state) do
      case ETS.lookup(tab, key) do
+       [] -> page = 0
+       [{_, page}] -> :ok
+     end
+     lookup_cell_txn(cell, state, page)
+   end
+   defp lookup_cell_txn({key, rev} = cell, State[tab: tab, staging_tab: staging] = state, page) do
+     case ETS.lookup(tab, {key, page}) do
        [] ->
          {@nil_value, "", ""}
-       [{_key, {value, [{entry_clock, ^rev}|_]}}] ->
+       [{_key, {_, {value, [{entry_clock, ^rev}|_]}}}] ->
          {value, entry_clock, rev}
-       [{_key, {_, history}}] ->
+       [{_key, {_, {_, history}}}] ->
          case Enum.find(history, fn({entry_clock, _}) -> 
                                                          entry_clock == rev or
                                                          ITC.decode(entry_clock) |>
@@ -207,15 +232,19 @@ defmodule Genomu.VNode do
              [{_, {value, _serialized}}] = ETS.lookup(staging, {key, entry_clock})
              {value, entry_clock, txn_rev}
            nil ->
-             {@nil_value, "", ""}
+             if page == 0 do
+               {@nil_value, "", ""}
+             else
+               lookup_cell_txn(cell, state, page - 1)
+             end
          end
      end
    end
 
 
    @spec stage(Genomu.cell, Genomu.Operation.serialized, value :: term, State.t) :: State.t
-   defp stage(cell, serialized, value, State[staging_tab: tab] = state) do
-     ETS.insert(tab, {cell, {value, serialized}})
+   defp stage(cell, serialized, value, State[staging_tab: staging_tab] = state) do
+     ETS.insert(staging_tab, {cell, {value, serialized}})
      state
    end
 
