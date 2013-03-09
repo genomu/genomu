@@ -175,8 +175,10 @@ defmodule Genomu.VNode do
      {info[:size] == 0, state}
    end
 
-   def delete(State[tab: tab] = state) do
+   def delete(State[tab: tab, staging_tab: staging_tab, commit_tab: commit_tab] = state) do
      ETS.delete_all_objects(tab)
+     ETS.delete_all_objects(staging_tab)
+     ETS.delete_all_objects(commit_tab)
      {:ok, state}
    end
 
