@@ -213,9 +213,35 @@ defmodule Genomu.Module.List do
   defp any_(bin, op) do
     {value, rest} = MsgPack.next(bin)
     case Genomu.Operation.apply(op, value) do
-      MsgPack.atom_true -> @true_value
-      MsgPack.atom_false -> 
+      @true_value -> @true_value
+      @false_value -> 
         any_(rest, op)
+    end
+  end
+
+  @args 1
+  def all?(MsgPack.fix_array(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    all_(rest, op)
+  end
+  def all?(MsgPack.array16(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    all_(rest, op)
+  end
+  def all?(MsgPack.array32(rest: rest), op) do
+    {op, ""} = MsgPack.unpack(op)
+    {op, ""} = Genomu.Operation.deserialize(op)
+    all_(rest, op)
+  end
+
+  defp all_("", _), do: @true_value
+  defp all_(bin, op) do
+    {value, rest} = MsgPack.next(bin)
+    case Genomu.Operation.apply(op, value) do
+      @true_value -> all_(rest, op)
+      @false_value -> @false_value
     end
   end
 

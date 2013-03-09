@@ -87,4 +87,14 @@ defmodule Genomu.Module.ListTest do
   end
 
 
+  test "all?", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    Ch.set(ch, ["key"], API.Core.identity([1,1,1]))
+    assert Ch.get(ch, ["key"], API.List.all?(API.Boolean.equals?(1))) == true
+    Ch.set(ch, ["key"], API.Core.identity([1,1,2]))
+    assert Ch.get(ch, ["key"], API.List.all?(API.Boolean.equals?(1))) == false
+  end
+
 end
