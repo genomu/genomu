@@ -121,12 +121,13 @@ defmodule Genomu.VNode do
                        v
                      end
                    end)
+       history_entry = history_entry(entry_clock, clock)
        if page_ctr <= @object_page_size do
-         ETS.insert(tab, {{key, page}, {page_ctr + 1, {value, [{entry_clock, clock}|history]}}})
+         ETS.insert(tab, {{key, page}, {page_ctr + 1, {value, [history_entry|history]}}})
        else
          # allocate a new page
          ETS.insert(tab, [{key, page + 1},
-                          {{key, page + 1}, {1, {value, [{{entry_clock, clock}}]}}}])
+                          {{key, page + 1}, {1, {value, [history_entry]}}}])
        end
      end
      ETS.insert(commit_tab, {{:C, clock}, {MsgPack.pack(commit_object), [clock]}})
@@ -202,6 +203,7 @@ defmodule Genomu.VNode do
      end
      case ETS.lookup(tab, {key, page}) do
        [{_, {_, {value, [{clock, txn_clock}|_history]}}}] -> {value, clock, txn_clock}
+       [{_, {_, {value, [clock|_history]}}}] -> {value, clock, clock}
        _ -> {@nil_value, "", ""}
      end
    end
@@ -226,15 +228,23 @@ defmodule Genomu.VNode do
          {@nil_value, "", ""}
        [{_key, {_, {value, [{entry_clock, ^rev}|_]}}}] ->
          {value, entry_clock, rev}
-       [{_key, {_, {_, history}}}] ->
-         case Enum.find(history, fn({entry_clock, _}) -> 
-                                                         entry_clock == rev or
-                                                         ITC.decode(entry_clock) |>
-                                                         ITC.le(ITC.decode(rev))
-                                                     end) do
+       [{_key, {_, {value, [^rev|_]}}}] ->
+         {value, rev, rev}
+       [{_key, {value, {_, history}}}] ->
+         case Enum.find(history, fn(c) ->
+                                     case c do
+                                       {entry_clock, _} -> :ok
+                                       entry_clock -> :ok
+                                     end
+                                     entry_clock == rev or
+                                     ITC.decode(entry_clock) |>
+                                     ITC.le(ITC.decode(rev))
+                                 end) do
            {entry_clock, txn_rev} ->
              [{_, {value, _serialized}}] = ETS.lookup(staging, {key, entry_clock})
              {value, entry_clock, txn_rev}
+           txn_rev when is_binary(txn_rev) ->
+             {value, txn_rev, txn_rev}
            nil ->
              if page == 0 do
                {@nil_value, "", ""}
@@ -259,6 +269,12 @@ defmodule Genomu.VNode do
        Lager.error "Error #{inspect {type, msg}} occurred while processing operation #{inspect operation} on #{inspect value}"
        :error
      end
+   end
+
+   @compile {:inline, [history_entry: 2]}
+   defp history_entry(clock, clock), do: clock
+   defp history_entry(entry_clock, clock) do
+     {entry_clock, clock}
    end
 
  end
