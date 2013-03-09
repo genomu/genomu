@@ -51,8 +51,9 @@
                 </tr>
               </thead>
               <tbody>
-                <tr style="cursor: pointer" ng-repeat="i in availableInstances()" ng-click="join(i)">
-                  <td>{{ findInstanceByURL(i).name }} ({{ i }})</td>
+                <tr style="cursor: pointer" ng-repeat="i in availableInstances()" >
+                  <td><a href="{{ i }}">{{ findInstanceByURL(i).name }} ({{ i }})</a></td>
+                  <td><a class="btn btn-success" ng-click="join(i)">Add</a></td>
                 </tr>
               </tbody>
             </table>
@@ -62,7 +63,7 @@
                   <label class="control-label" for="instanceURL">Add an instance at</label>
                   <div class="controls">
                     <input class="input-xlarge focused" id="instanceURL" type="text" placeholder="http://" ng-model="instanceToAdd">
-                    <input class="btn-primary" type="submit" value="add">
+                    <button class="btn-success btn-mini"><i class="fa-icon-arrow-right"></i></button>
                   </div>
                 </div>            
               </fieldset>
