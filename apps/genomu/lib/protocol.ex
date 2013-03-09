@@ -11,11 +11,12 @@ defmodule Genomu.Protocol do
                    channels: nil
 
   def init(listener_pid, socket, transport, _opts) do
+    :erlang.process_flag(:trap_exit, true)
     :ok = :proc_lib.init_ack({:ok, self})
     :ok = :ranch.accept_ack(listener_pid)
     :ok = transport.setopts(socket, active: true, packet: 4)
-    state = State.new(socket: socket, transport: transport, 
-                      channels: HashDict.new)
+    state = State.new(socket: socket, transport: transport,
+                      channels: :ets.new(__MODULE__.Channels, [:ordered_set]))
     :gen_server.enter_loop(__MODULE__, [], state)
   end
 
@@ -28,6 +29,18 @@ defmodule Genomu.Protocol do
     {:stop, :normal, state}
   end
 
+  def handle_info({:'EXIT', pid, _reason}, State[channels: channels] = state) do
+    case :ets.lookup(channels, pid) do
+      [] ->
+        {:stop, :normal, state}
+      [{_, channel}] ->
+        # Remove the channel and continue on
+        :ets.delete(channels, pid)
+        :ets.delete(channels, channel)
+        {:noreply, state}
+    end
+  end
+
   def handle_cast({channel, response}, State[transport: transport, socket: socket] = state) do
     transport.send(socket, channel <> handle_response(response))
     {:noreply, state}
@@ -38,14 +51,14 @@ defmodule Genomu.Protocol do
   @spec handle_packet(binary, State.t) :: {State.t, binary}
   defp handle_packet(data, State[channels: channels] = state) do
     {channel, rest} = MsgPack.next(data)
-    case Dict.get(channels, channel) do
-      nil -> 
+    case :ets.lookup(channels, channel) do
+      [] ->
         {:ok, ch} = Genomu.Channel.start
         Process.link(ch)
         {_options, rest} = MsgPack.unpack(rest)
         # TODO: pass options to the channel
-        state = state.channels(Dict.put(channels, channel, ch))
-      ch ->
+        :ets.insert(channels, [{channel, ch}, {ch, channel}])
+      [{_, ch}] ->
         me = self
         {key, rest} = MsgPack.unpack(rest)
         case key do
