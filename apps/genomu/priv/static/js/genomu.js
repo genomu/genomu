@@ -18,11 +18,13 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
     var ClusterMembershipPlan = $resource('/cluster/membership/staging',{},
                                           {commit: {method: 'POST'},
                                            discard: {method: 'DELETE'}});
+    var ClusterDiscovery = $resource('/cluster/discovery');
 
     $scope.instance = Instance.get();
     $scope.cluster = Cluster.get();
     $scope.clusterMembership = ClusterMembership.get();
     $scope.clusterMembershipPlan = ClusterMembershipPlan.get();
+    $scope.clusterDiscovery = ClusterDiscovery.get();
 
     $scope.ownership = function(instance) {
       return (instance.indices.length * 100 / $scope.cluster.num_partitions)
@@ -51,6 +53,15 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
       });
     });
 
+    $scope.availableInstances = function() {
+      if (typeof $scope.clusterDiscovery.announced == 'undefined' ||
+          typeof $scope.clusterMembership.instances == 'undefined') return [];
+      discovery = angular.fromJson(angular.toJson($scope.clusterDiscovery.announced)).map(function(v) { return v.url; }).
+                          filter(function(v) { return typeof(v) != 'undefined' });
+      joined = angular.fromJson(angular.toJson($scope.clusterMembership.instances)).map(function(v) { return v.url; });
+      return _.difference(discovery, joined);
+    }
+
     $scope.findInstanceByURL = function(url) {
         var instances = $scope.clusterMembership.instances;
         for (var i in instances) {
@@ -71,14 +82,15 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
 
     $scope.stageJoin = function() {
        var i = $scope.instanceToAdd;
-
        if (i.substring(0, 6) != "http://" &&
            i.substring(0, 7) != "https://") {
           i = "http://" + i;
        }
-
        $scope.instanceToAdd = '';
+       $scope.join(i);
+    }
 
+    $scope.join = function(i) {
        $http.jsonp(i +
                    '/cluster/membership',
                    {params: {instance_url: $scope.instance.instance_url, method: 'POST'}});
@@ -93,6 +105,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
       $scope.cluster.$get();
       $scope.clusterMembership.$get();
       $scope.clusterMembershipPlan.$get();
+      $scope.clusterDiscovery.$get();
     }
 
     var refresh_ = function() {
@@ -101,7 +114,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
     }
 
     refresh_();
-
+    $scope.$console = window.console;
 });
 
 app.config(function ($routeProvider) {

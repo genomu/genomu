@@ -17,7 +17,7 @@ defmodule Genomu.Mixfile do
                     :compiler, :syntax_tools, ## riak_core
                     :jsx,
                     :cowboy, :ranch,
-                    :hackney,
+                    :hackney, :dnssd
                    ] ++ env_applications(Mix.env),
      included_applications: [:riak_core],
      version: version,
@@ -51,6 +51,7 @@ defmodule Genomu.Mixfile do
        {:ranch,       github: "extend/ranch", tag: "0.6.1"},
      {:hackney,       github: "benoitc/hackney"},
        {:mimetypes,   github: "spawngrid/mimetypes"},
+     {:dnssd,         github: "yrashk/dnssd_erlang"},
     ] ++ deps(Mix.env)
   end
 

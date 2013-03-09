@@ -11,7 +11,7 @@ defmodule Genomu.HTTP do
         {"/", Genomu.HTTP.Page, []},
         {"/template/[:page]", Genomu.HTTP.Page, []},
         {"/instance", Genomu.HTTP.Instance, []},
-        {"/cluster/[membership[/staging]]", Genomu.HTTP.Cluster, []},
+        {"/cluster/[...]", Genomu.HTTP.Cluster, []},
         {"/[...]", :cowboy_static, static},
       ]},
     ] |> :cowboy_router.compile

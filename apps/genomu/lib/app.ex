@@ -22,6 +22,8 @@ defsupervisor Genomu.Sup, name: {:local, :genomu_sup} do
     worker id: Genomu.Channel, restart: :temporary
   end
 
+  worker id: Genomu.DNSSD
+
 
 end
 

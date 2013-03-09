@@ -91,6 +91,11 @@ defmodule Genomu.HTTP.Cluster do
     {json |> maybe_jsonp(req), req, state}
   end
 
+  def to_json("/cluster/discovery", req, state) do
+    json = [announced: Genomu.DNSSD.available_instances]
+    {json |> maybe_jsonp(req), req, state}
+  end
+
   def to_json("/cluster/membership", req, state) do
     json = [instances: Enum.map(Genomu.Cluster.all_members_status,
                                 fn({node, status}) ->

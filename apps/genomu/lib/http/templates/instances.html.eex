@@ -44,7 +44,19 @@
           </div>
           <div class="box-content">
             <div class="row-fluid">
-             <form class="form-horizontal" ng-submit="stageJoin()">
+            <table class="table table-hover" ui-if="availableInstances().length > 0">
+              <thead>
+                <tr>
+                <th>Available instances ({{ availableInstances().length }})</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="cursor: pointer" ng-repeat="i in availableInstances()" ng-click="join(i)">
+                  <td>{{ i }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <form class="form-horizontal" ng-submit="stageJoin()">
               <fieldset>
                 <div class="control-group">
                   <label class="control-label" for="instanceURL">Add an instance at</label>
@@ -55,6 +67,7 @@
                 </div>            
               </fieldset>
             </form>
+
             </div>
             <table class="table table-striped table-hover table-bordered" ui-if="clusterMembershipPlan.plan.transitions > 0">
                   <thead>
