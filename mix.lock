@@ -17,7 +17,7 @@
   "msgpack": {:git,"https://github.com/msgpack/msgpack-erlang.git","99ed5ce485c307f9288797b1f30bb5d01d0e8fed",[]},
   "poolboy": {:git,"https://github.com/devinus/poolboy.git","08c5b1d1fc1a967ce9c1ffc393e7e918a61c2834",[]},
   "proper": {:git,"https://github.com/manopapad/proper","43a576f8b930f9a9d472e9fd5955dd0b0469bf4a",[]},
-  "properex": {:git,"https://github.com/yrashk/properex.git","4abc36797cd01f2bacfb9c2d93c6892b653be27c",[]},
+  "properex": {:git,"https://github.com/yrashk/properex.git","f203e60325aa653d129a7dec150f5d24feff3492",[]},
   "protobuffs": {:git,"https://github.com/basho/erlang_protobuffs.git","839e441c194fb946b2a72df24252b377269169cb",[]},
   "ranch": {:git,"https://github.com/extend/ranch.git","d635aece25ae0d6489d2c3c074cfb6363d92fc61",[tag: "0.6.1"]},
   "riak_core": {:git,"https://github.com/basho/riak_core.git","2f13622cd683f5963d16cfc4216ad823bada6508",[]},
