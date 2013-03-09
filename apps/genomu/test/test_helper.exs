@@ -14,13 +14,23 @@ defmodule Genomu.TestCase do
     end
   end
 
+  def qc_output('.', []) do
+  end
+  def qc_output('~n', []) do
+  end
+  def qc_output('OK: Passed ~b test(s).~n', _) do
+  end
+  def qc_output(msg, args) do
+    :io.format(msg, args)
+  end
+
   defmacro qc(do: body) do
     quote do
       f =
       fn() ->
         unquote(body)
       end
-      assert Proper.quickcheck(f.(), numtests: 100) == true
+      assert Proper.quickcheck(f.(), numtests: 100, on_output: function(Genomu.TestCase.qc_output/2)) == true
     end
   end
 
