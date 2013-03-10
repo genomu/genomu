@@ -40,11 +40,13 @@ defmodule Genomu.Coordinator do
   defrecord State, from: nil, for: nil, handler_state: nil,
                    quorums: [],
                    timeout: nil,
+                   sent_at: nil,
                    touched_at: nil, elapsed: 0 do
 
     record_type    from: {pid, tag :: term}, for: term, handler_state: term,
                    quorum: [Genomu.Coordinator.Quorum.t],
                    timeout: timeout,
+                   sent_at: non_neg_integer,
                    touched_at: non_neg_integer, elapsed: non_neg_integer
 
     @spec touch(t) :: t
@@ -87,7 +89,7 @@ defmodule Genomu.Coordinator do
                                                           Genomu.VNode_master)
                            hstate
                          end
-    {:next_state, :waiting, state.handler_state(hstate), 0}
+    {:next_state, :waiting, state.sent_at(Genomu.Utils.now_in_microseconds).handler_state(hstate), 0}
   end
 
 
@@ -102,7 +104,8 @@ defmodule Genomu.Coordinator do
 
   def waiting({:ok, ref, partition, response},
               State[quorums: quorums,
-                    for: for, handler_state: hstate] = state) do
+                    for: for, handler_state: hstate, sent_at: sent_at] = state) do
+    :folsom_metrics.notify({Genomu.Metrics, PartitionResponseTime}, Genomu.Utils.now_in_microseconds - sent_at)
     quorum = List.keyfind(quorums, ref, @quorum_ref_index)
     case Proto.handle_response(for, response, partition, quorum, hstate) do
       {:ok, quorum, hstate} ->
@@ -113,6 +116,7 @@ defmodule Genomu.Coordinator do
     quorums = List.keyreplace(quorums, ref, @quorum_ref_index, quorum)
     state = state.update(handler_state: hstate, quorums: quorums)
     if all_quorums_ready?(quorums) do
+      :folsom_metrics.notify({Genomu.Metrics, QuorumTime}, Genomu.Utils.now_in_microseconds - sent_at)
       case Proto.finalize(for, hstate) do
         {:reply, response, hstate} ->
           done(response, state.handler_state(hstate))

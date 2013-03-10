@@ -48,10 +48,10 @@
 
       <div  class="row-fluid">
           <div class="widget span6">
-            <h2><span class="glyphicons fire"><i></i></span>Channel Response Time</h2>
+            <h2><span class="glyphicons fire"><i></i></span>Processing Time</h2>
             <hr>
             <div class="content">
-               <div id="metric-ChannelResponseTime" style="height:300px;"></div>
+               <div id="metric-ProcessingTime" style="height:300px;"></div>
             </div>
           </div>
       </div>

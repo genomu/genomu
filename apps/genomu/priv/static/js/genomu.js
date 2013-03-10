@@ -108,14 +108,21 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                    {params: {instance_url: $scope.instance.instance_url, method: 'POST'}});
     }
 
-    if ($("#metric-ChannelResponseTime").length > 0) {
+    if ($("#metric-ProcessingTime").length > 0) {
       $scope.metricChannelResponseTime = [];
+      $scope.metricPartitionResponseTime = [];
+      $scope.metricQuorumTime = [];
 
       for (var i = 0; i < 20; i++) {
         $scope.metricChannelResponseTime.push(null);
+        $scope.metricPartitionResponseTime.push(null);
+        $scope.metricQuorumTime.push(null);
       }
 
-      $scope.graphChannelResponseTime = $.plot($("#metric-ChannelResponseTime"), [], {
+      $scope.graphProcessingTime = $.plot($("#metric-ProcessingTime"), [{label: "Channel Response Time (Arithmetic Mean)", data: []},
+                                                                        {label: "Quorum Time (Arithmetic Mean)", data: []},
+                                                                        {label: "Partition Response Time (Arithmetic Mean)", data: []},
+                                                                        ], {
         series: { shadowSize: 1 },
         lines: { show: true, lineWidth: 3, fill: true, fillColor: { colors: [ { opacity: 0.4 }, { opacity: 0.4 } ] }},
         yaxis: { show: true, min: 0, tickFormatter: function (v) { return v + " µs"; }},
@@ -127,20 +134,39 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
       });
 
 
-      $scope.$watch('metrics.ChannelResponseTime.arithmetic_mean', function(n) {
-         if (typeof n == 'undefined') return;
-         $scope.metricChannelResponseTime.push(n);
+      $scope.$watch('metrics', function(n) {
+         if (typeof n.ChannelResponseTime == 'undefined') return;
+         $scope.metricChannelResponseTime.push(n.ChannelResponseTime.arithmetic_mean);
          $scope.metricChannelResponseTime.shift();
-         var opts = $scope.graphChannelResponseTime.getOptions();
-         opts.yaxis.max = Math.max.apply(this, $scope.metricChannelResponseTime.filter(function(v) { return v != null }));
+         $scope.metricPartitionResponseTime.push(n.PartitionResponseTime.arithmetic_mean);
+         $scope.metricPartitionResponseTime.shift();
+         $scope.metricQuorumTime.push(n.QuorumTime.arithmetic_mean);
+         $scope.metricQuorumTime.shift();
+         var opts = $scope.graphProcessingTime.getOptions();
+         opts.yaxis.max = Math.max.apply(this, $scope.metricChannelResponseTime.
+                                               concat($scope.metricPartitionResponseTime).
+                                               concat($scope.metricQuorumTime).
+                                               filter(function(v) { return v != null }));
          var data = $scope.metricChannelResponseTime.map(function(v, i) {
-           if (v == null) v = n;
+           if (v == null) v = n.ChannelResponseTime.arithmetic_mean;
            return [i + 1, v];
          });
-         $scope.graphChannelResponseTime.setData([ data ]);
-         $scope.graphChannelResponseTime.setupGrid();
-         $scope.graphChannelResponseTime.draw();
-      });
+         var pdata = $scope.metricPartitionResponseTime.map(function(v, i) {
+           if (v == null) v = n.PartitionResponseTime.arithmetic_mean;
+           return [i + 1, v];
+         });
+         var qdata = $scope.metricQuorumTime.map(function(v, i) {
+           if (v == null) v = n.QuorumTime.arithmetic_mean;
+           return [i + 1, v];
+         });
+
+         $scope.graphProcessingTime.setData([ {label: "Channel Response Time (Arithmetic Mean)", data: data},
+                                              {label: "Quorum Time (Arithmetic Mean)", data: qdata},
+                                              {label: "Partition Response Time (Arithmetic Mean)", data: pdata},
+                                         ]);
+         $scope.graphProcessingTime.setupGrid();
+         $scope.graphProcessingTime.draw();
+      }, true);
     }
     $scope.page = function() {
       return window.location.pathname + window.location.hash;
