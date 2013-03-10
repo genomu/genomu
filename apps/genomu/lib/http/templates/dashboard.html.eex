@@ -47,7 +47,7 @@
         </div>
 
       <div  class="row-fluid">
-          <div class="widget span12">
+          <div class="widget span6">
             <h2><span class="glyphicons fire"><i></i></span>Channel Response Time</h2>
             <hr>
             <div class="content">
