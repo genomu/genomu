@@ -10,7 +10,6 @@ defmodule Genomu.Protocol do
                    channels: nil
 
   def init(listener_pid, socket, transport, _opts) do
-    :folsom_metrics.new_counter({Genomu.Metrics, Connections})
     :folsom_metrics.notify({{Genomu.Metrics, Connections}, {:inc, 1}})
     :erlang.process_flag(:trap_exit, true)
     :ok = :proc_lib.init_ack({:ok, self})

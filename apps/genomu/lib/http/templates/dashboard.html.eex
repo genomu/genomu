@@ -24,7 +24,7 @@
 
           <div class="stat">
             <div class="left">
-              <div class="number blue" ng-bind="metrics.Connections || 0">0</div>
+              <div class="number blue" ng-bind="metrics.Connections">0</div>
               <div class="title"><span class="color blue"></span>Clients</div>
             </div>
           </div>

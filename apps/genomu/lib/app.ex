@@ -5,6 +5,8 @@ defsupervisor Genomu.Sup, name: {:local, :genomu_sup} do
          function: :start, args: [:undefined, :undefined],
          modules: :dynamic
 
+  worker id: Genomu.Metrics
+
   worker id: Genomu.VNode,
          module: :riak_core_vnode_master, args: [Genomu.VNode],
          modules: [:riak_core_vnode_master, Genomu.VNode]

@@ -91,7 +91,6 @@ defmodule Genomu.Channel do
   end
 
   def init({root, parent, clock}) do
-    :folsom_metrics.new_counter({Genomu.Metrics, Channels})
     if root == false, do: :folsom_metrics.notify({{Genomu.Metrics, Channels}, {:inc, 1}})
     :erlang.process_flag(:trap_exit, true)
     {:ok, State.new(root: root, parent: parent, clock: clock).initialize}
