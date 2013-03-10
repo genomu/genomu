@@ -51,6 +51,7 @@ defmodule Genomu.Protocol do
   end
 
   @true_value MsgPack.pack(true)
+  @nil_value MsgPack.pack(nil)
 
   @spec handle_packet(binary, State.t) :: {State.t, binary}
   defp handle_packet(data, State[channels: channels] = state) do
@@ -96,11 +97,11 @@ defmodule Genomu.Protocol do
   defp handle_response(:ok) do
     @true_value
   end
+  defp handle_response(:timeout) do
+    @nil_value
+  end
   defp handle_response({{value, clock}, txn}) do
     value <> MsgPack.pack(clock) <> MsgPack.pack(txn)
-  end
-  defp handle_response(value) do
-    value
   end
 
   def terminate(_, _state) do
