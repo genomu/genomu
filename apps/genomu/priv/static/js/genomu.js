@@ -128,7 +128,6 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
        $scope.metricChannelResponseTime.shift();
        var opts = $scope.graphChannelResponseTime.getOptions();
        opts.yaxis.max = Math.max.apply(this, $scope.metricChannelResponseTime.filter(function(v) { return v != null }));
-       console.log(opts.yaxis)
        var data = $scope.metricChannelResponseTime.map(function(v, i) {
          if (v == null) v = n;
          return [i + 1, v];
