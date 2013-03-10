@@ -6,7 +6,26 @@ defmodule Genomu.Channel do
 
   @spec start :: {:ok, pid} | {:error, reason :: term}
   def start do
-    Genomu.Channel.fork Genomu.Channel.Root
+    i = :random.uniform(:mochiglobal.get(Genomu.Channel.NRootChannels))
+    Genomu.Channel.fork elem(:mochiglobal.get(Genomu.Channel.RootChannels), i - 1)
+  end
+
+  defp wait_for_channel_to_die(ch) do
+    wait_for_channel_to_die(Process.whereis(ch), true)
+  end
+  defp wait_for_channel_to_die(nil, _), do: :ok
+  defp wait_for_channel_to_die(ch, true) do
+    wait_for_channel_to_die(ch, Process.alive?(ch))
+  end
+  defp wait_for_channel_to_die(_, false), do: :ok
+
+  def restart_roots do
+      lc ch inlist tuple_to_list(:mochiglobal.get(Genomu.Channel.RootChannels)) do
+        stop(ch)
+        wait_for_channel_to_die(ch)
+        Genomu.Channel.fork(Genomu.Channel.Root, ch)
+      end
+      :ok
   end
 
   @spec start_link(root :: atom | boolean, 
@@ -41,7 +60,7 @@ defmodule Genomu.Channel do
     end
     # If it's a root channel, and the clock is not
     # specified, read it
-    def initialize(__MODULE__[root: root, clock: nil] = state) do
+    def initialize(__MODULE__[root: root, clock: clock] = state) do
       data_dir = Application.environment(:genomu)[:data_dir]
       filename = Path.join(data_dir, "#{inspect root}")
       unless File.exists?(filename) do
@@ -49,16 +68,17 @@ defmodule Genomu.Channel do
       end
       {:ok, file} = File.open(filename, [:binary, :raw, :read, :write])
       state = state.crash_clock_file(file)
-      if new_file do
-        crash_clock = ITC.seed
+      unless nil?(clock) do
+        crash_clock = clock
       else
-        {:ok, bin} = :file.pread(file, 0, File.stat!(filename).size)
-        crash_clock = ITC.decode(bin)
+        if new_file do
+          crash_clock = ITC.seed
+        else
+          {:ok, bin} = :file.pread(file, 0, File.stat!(filename).size)
+          crash_clock = ITC.decode(bin)
+        end
       end
       state.crash_clock(crash_clock).clock(crash_clock)
-    end
-    def initialize(__MODULE__[] = state) do
-      state
     end
 
     defoverridable crash_clock: 2

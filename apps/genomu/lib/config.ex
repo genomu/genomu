@@ -21,6 +21,8 @@ defmodule Genomu.Config do
   defproperty cluster_name, default: "default"
   @shortdoc "Port"
   defproperty port, default: 9101
+  @shortdoc "Root channels"
+  defproperty root_channels, default: 8
 
   def sys_config(config) do
     [
@@ -31,6 +33,7 @@ defmodule Genomu.Config do
        hostname: config.hostname,
        port: config.port,
        instance_name: config.instance_name,
+       root_channels: config.root_channels,
      ],
      riak_core: [
        ring_state_dir: to_char_list(Path.join([config.data_dir, to_binary(config.instance_name), "ring"])),

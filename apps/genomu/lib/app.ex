@@ -49,8 +49,18 @@ defmodule Genomu.App do
     :mochiglobal.put(Genomu.Utils.HostID, host_id)
     #
 
+    :mochiglobal.put(Genomu.Channel.NRootChannels, env[:root_channels])
+
     case Genomu.Sup.start_link do
       {:ok, pid} ->
+        roots =
+        Enum.map(1..env[:root_channels], fn(n) ->
+          Module.concat([Genomu.Channel.Root, :"N#{n}"])
+        end) |> list_to_tuple
+        :mochiglobal.put(Genomu.Channel.RootChannels, roots)
+
+        Genomu.Channel.restart_roots
+
         :ok = :riak_core.register(:genomu, [{:vnode_module, Genomu.VNode}])
         {:ok, _} = Genomu.HTTP.start
         {:ok, _} = :ranch.start_listener(Genomu.Protocol, 100,

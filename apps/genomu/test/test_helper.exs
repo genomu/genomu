@@ -50,6 +50,7 @@ defmodule Genomu.TestCase do
     :application.set_env(:genomu, :http_port, @http_port)
     :application.set_env(:genomu, :port, @port)
     :application.set_env(:genomu, :data_dir, data_dir)
+    :application.set_env(:genomu, :root_channels, 4)
     :application.load(:lager)
     :application.set_env(:lager, :handlers, [])
     unless nil?(System.get_env("GENOMU_TEST_LOG")) do
