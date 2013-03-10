@@ -65,14 +65,13 @@ defmodule Genomu.Coordinator do
   def init(opts) do
     opts  = Keyword.merge(default_options, opts)
     {:ok, hstate} = Proto.init(opts[:for])
-    state = State.new(Keyword.merge(opts, started_at: Genomu.Utils.now_in_microseconds,
-                                          handler_state: hstate)).touch
+    state = State.new(Keyword.merge(opts, handler_state: hstate)).touch
     {:ok, :init, state}
   end
 
   defevent init/execute, export: [timeout: :infinity], sync: true, from: from, 
                          state: State[] = state do
-    {:next_state, :prepare, state.update(from: from), 0}
+    {:next_state, :prepare, state.update(from: from, started_at: Genomu.Utils.now_in_microseconds), 0}
   end
 
   defevent prepare/timeout, state: State[for: for, handler_state: hstate] = state do
