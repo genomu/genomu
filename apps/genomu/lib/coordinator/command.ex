@@ -50,6 +50,6 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Command do
   end
 
   @spec hash(Genomu.key) :: Genomu.Coordinator.index
-  def hash(key), do: :crypto.sha(key)
+  defp hash(key), do: :crypto.sha(key)
 
 end

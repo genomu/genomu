@@ -77,7 +77,7 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
   end
 
   @spec hash(Genomu.key) :: Genomu.Coordinator.index
-  def hash(key), do: :crypto.sha(key)
+  defp hash(key), do: :crypto.sha(key)
 
 
 end
