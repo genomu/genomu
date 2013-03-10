@@ -23,13 +23,14 @@ defmodule Genomu.Channel do
   end
 
   defrecord State, root: false, parent: nil,
-                   clock: nil, crash_clock: nil,
+                   clock: nil, crash_clock: nil, crash_clock_filename: nil,
                    outstanding: [],
                    snapshot: nil, log: [],
                    children: nil do
 
     record_type root: atom | boolean, parent: nil | Genomu.gen_server_ref,
                 clock: nil | ITC.t, crash_clock: nil | ITC.t,
+                crash_clock_filename: String.t,
                 outstanding: [ITC.t],
                 snapshot: nil | :ets.tid, log: [Genomu.Transaction.entry],
                 children: nil | :ets.tid
@@ -40,7 +41,10 @@ defmodule Genomu.Channel do
     end
     # If it's a root channel, and the clock is not
     # specified, read it
-    def initialize(__MODULE__[clock: nil] = state) do
+    def initialize(__MODULE__[root: root, clock: nil] = state) do
+      data_dir = Application.environment(:genomu)[:data_dir]
+      filename = Path.join(data_dir, "#{inspect root}")
+      state = state.crash_clock_filename(filename)
       crash_clock = read_crash_clock(state)
       state.crash_clock(crash_clock).clock(crash_clock)
     end
@@ -54,24 +58,18 @@ defmodule Genomu.Channel do
     end
 
     @spec dump_crash_clock(t) :: t
-    defp dump_crash_clock(__MODULE__[crash_clock: crash_clock] = state)  do
-      File.write(crash_clock_filename(state), ITC.encode_binary(crash_clock))
+    defp dump_crash_clock(__MODULE__[crash_clock: crash_clock, crash_clock_filename: f] = state)  do
+      File.write(f, ITC.encode_binary(crash_clock))
       state
     end
 
     @spec read_crash_clock(t) :: ITC.t
-    defp read_crash_clock(__MODULE__[] = state) do
-      if File.exists?(crash_clock_filename(state)) do
-        File.read!(crash_clock_filename(state)) |> ITC.decode
+    defp read_crash_clock(__MODULE__[crash_clock_filename: f]) do
+      if File.exists?(f) do
+        File.read!(f) |> ITC.decode
       else
         ITC.seed
       end
-    end
-
-    @spec crash_clock_filename(t) :: String.t
-    defp crash_clock_filename(__MODULE__[root: root]) do
-      data_dir = Application.environment(:genomu)[:data_dir]
-      Path.join(data_dir, "#{inspect root}")
     end
 
     @spec memoize(Genomu.key, binary, t) :: t
