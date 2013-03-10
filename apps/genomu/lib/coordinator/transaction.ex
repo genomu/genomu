@@ -11,29 +11,29 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
     {:ok, State.new}
   end
 
+  @compile {:inline, get_quorums: 5, get_preflist: 2}
+  defp get_quorums([], _qt, _txn, entries, quorums), do: {quorums, entries}
+  defp get_quorums([{key, _} = cell|t], Genomu.Coordinator.Quorum[] = qt, txn, entries, quorums) do
+      preflist = get_preflist(key, txn)
+      ref = :erlang.phash2(preflist)
+      case List.keyfind(entries, ref, 0) do
+      {_, cells} ->
+        cells = List.keystore(cells, key, 0, cell)
+        entries = List.keyreplace(entries, ref, 0, {ref, cells})
+      _ ->
+        quorum = qt.update(ref: ref, preflist: preflist)
+        entries = [{ref, [cell]}|entries]
+        quorums = [quorum|quorums]
+      end
+      get_quorums(t, qt, txn, entries, quorums)
+  end
+
   def quorums(Genomu.Transaction[log: log, 
                                  n: n, r: r, vnodes: vnodes] = txn, State[] = state) do
-    {top, _} = Enum.reduce(log, {[], []},
-                           fn({k, r}, {acc, keys}) ->
-                             if List.member?(keys, k) do
-                               {acc, keys}
-                             else
-                               {[{k, r}|acc], [k|keys]}
-                             end
-                           end)
-    quorums =
-    Enum.reduce(top, HashDict.new,
-                fn({key, clock}, dict) ->
-                   preflist = get_preflist(key, txn)
-                   ref = make_ref
-                   quorum = Genomu.Coordinator.Quorum.new(ref: ref, 
-                            n: n, r: r, vnodes: vnodes, preflist: preflist)
-                   entry = {key, clock}
-                   Dict.update(dict, quorum, [entry], [entry|&1])
-                end) |> Dict.to_list
-    {:ok,
-     (lc {quorum, _} inlist quorums, do: quorum),
-     state.entries(lc {Genomu.Coordinator.Quorum[]=quorum, entries} inlist quorums, do: {quorum.ref, entries})}
+    quorum_template = Genomu.Coordinator.Quorum.new(n: n, r: r, vnodes: vnodes)
+    Genomu.Coordinator.Quorum[] = quorum_template
+    {quorums, entries} = get_quorums(log, quorum_template, txn, [], [])
+    {:ok, quorums, state.entries(entries)}
   end
 
   def message(Genomu.Transaction[log: log] = txn, Genomu.Coordinator.Quorum[] = quorum, 
