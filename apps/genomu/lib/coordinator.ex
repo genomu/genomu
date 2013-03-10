@@ -40,13 +40,13 @@ defmodule Genomu.Coordinator do
   defrecord State, from: nil, for: nil, handler_state: nil,
                    quorums: [],
                    timeout: nil,
-                   sent_at: nil,
+                   sent_at: nil, started_at: nil,
                    touched_at: nil, elapsed: 0 do
 
     record_type    from: {pid, tag :: term}, for: term, handler_state: term,
                    quorum: [Genomu.Coordinator.Quorum.t],
                    timeout: timeout,
-                   sent_at: non_neg_integer,
+                   sent_at: non_neg_integer, started_at: non_neg_integer,
                    touched_at: non_neg_integer, elapsed: non_neg_integer
 
     @spec touch(t) :: t
@@ -65,7 +65,8 @@ defmodule Genomu.Coordinator do
   def init(opts) do
     opts  = Keyword.merge(default_options, opts)
     {:ok, hstate} = Proto.init(opts[:for])
-    state = State.new(Keyword.merge(opts, handler_state: hstate)).touch
+    state = State.new(Keyword.merge(opts, started_at: Genomu.Utils.now_in_microseconds,
+                                          handler_state: hstate)).touch
     {:ok, :init, state}
   end
 
@@ -145,8 +146,9 @@ defmodule Genomu.Coordinator do
   end
 
   @spec done(response :: term, State.t) :: {:stop, :normal, State.t}
-  defp done(response, State[from: from] = state) do
+  defp done(response, State[from: from, started_at: started_at] = state) do
     :gen_fsm.reply(from, response)
+    :folsom_metrics.notify({Genomu.Metrics, CoordinationTime}, Genomu.Utils.now_in_microseconds - started_at)
     :supervisor.terminate_child(Genomu.Sup.Coordinator, self)
     {:stop, :normal, state}
   end

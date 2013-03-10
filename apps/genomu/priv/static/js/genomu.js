@@ -112,14 +112,17 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
       $scope.metricChannelResponseTime = [];
       $scope.metricPartitionResponseTime = [];
       $scope.metricQuorumTime = [];
+      $scope.metricCoordinationTime = [];
 
       for (var i = 0; i < 20; i++) {
         $scope.metricChannelResponseTime.push(null);
         $scope.metricPartitionResponseTime.push(null);
         $scope.metricQuorumTime.push(null);
+        $scope.metricCoordinationTime.push(null);
       }
 
       $scope.graphProcessingTime = $.plot($("#metric-ProcessingTime"), [{label: "Channel Response Time (Arithmetic Mean)", data: []},
+                                                                        {label: "Coordination Time (Arithmetic Mean)", data: []},
                                                                         {label: "Quorum Time (Arithmetic Mean)", data: []},
                                                                         {label: "Partition Response Time (Arithmetic Mean)", data: []},
                                                                         ], {
@@ -128,6 +131,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
         yaxis: { show: true, min: 0, tickFormatter: function (v) { return v + " µs"; }},
         xaxis: { show: false, min: 0, max: 20 },
         colors: ["#FA5833"],
+        legend: { position: "sw" },
         grid: { tickColor: "#f9f9f9",
             borderWidth: 0,
         }
@@ -142,10 +146,14 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
          $scope.metricPartitionResponseTime.shift();
          $scope.metricQuorumTime.push(n.QuorumTime.arithmetic_mean);
          $scope.metricQuorumTime.shift();
+         $scope.metricCoordinationTime.push(n.CoordinationTime.arithmetic_mean);
+         $scope.metricCoordinationTime.shift();
+
          var opts = $scope.graphProcessingTime.getOptions();
          opts.yaxis.max = Math.max.apply(this, $scope.metricChannelResponseTime.
                                                concat($scope.metricPartitionResponseTime).
                                                concat($scope.metricQuorumTime).
+                                               concat($scope.metricCoordinationTime).
                                                filter(function(v) { return v != null }));
          var data = $scope.metricChannelResponseTime.map(function(v, i) {
            if (v == null) v = n.ChannelResponseTime.arithmetic_mean;
@@ -159,8 +167,13 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
            if (v == null) v = n.QuorumTime.arithmetic_mean;
            return [i + 1, v];
          });
+         var cdata = $scope.metricCoordinationTime.map(function(v, i) {
+           if (v == null) v = n.CoordinationTime.arithmetic_mean;
+           return [i + 1, v];
+         });
 
          $scope.graphProcessingTime.setData([ {label: "Channel Response Time (Arithmetic Mean)", data: data},
+                                              {label: "Coordination Time (Arithmetic Mean)", data: cdata},
                                               {label: "Quorum Time (Arithmetic Mean)", data: qdata},
                                               {label: "Partition Response Time (Arithmetic Mean)", data: pdata},
                                          ]);

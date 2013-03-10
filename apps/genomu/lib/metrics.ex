@@ -16,6 +16,7 @@ defmodule Genomu.Metrics do
     M.new_histogram({__MODULE__, ChannelResponseTime})
     M.new_histogram({__MODULE__, PartitionResponseTime})
     M.new_histogram({__MODULE__, QuorumTime})
+    M.new_histogram({__MODULE__, CoordinationTime})
     {:ok, State.new}
   end
 
