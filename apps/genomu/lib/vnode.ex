@@ -106,18 +106,8 @@ defmodule Genomu.VNode do
        end
        MsgPack.Map[map: commit_object_dict] = commit_object
        MsgPack.Map[map: log] = commit_object_dict[CO.log]
-       value =
-       Enum.reduce(log, value,
-                   fn({k, r}, v) ->
-                     if k == key do
-                       [{_, {_, op}}] = ETS.lookup(staging, {key, r})
-                       nv = apply_operation(op, v)
-                       ETS.insert(staging, {{key, r}, {nv, op}})
-                       nv
-                     else
-                       v
-                     end
-                   end)
+       {value, updates} = recalculate(log, key, value, [], staging)
+       ETS.insert(staging, updates)
        history_entry = history_entry(entry_clock, clock)
        if page_ctr <= @object_page_size do
          ETS.insert(tab, {{key, page}, {page_ctr + 1, {value, [history_entry|history]}}})
@@ -266,6 +256,16 @@ defmodule Genomu.VNode do
        Lager.error "Error #{inspect {type, msg}} occurred while processing operation #{inspect operation} on #{inspect value}"
        :error
      end
+   end
+
+   defp recalculate([], _, acc, updates, _staging), do: {acc, updates}
+   defp recalculate([{k, _} = cell|t], k, acc, updates, staging) do
+     [{_, {_, op}}] = ETS.lookup(staging, cell)
+     acc = apply_operation(op, acc)
+     recalculate(t, k, acc, [{cell, {acc, op}}|updates], staging)
+   end
+   defp recalculate([_|t], k, acc, updates, staging) do
+     recalculate(t, k, acc, updates, staging)
    end
 
    @compile {:inline, [history_entry: 2]}
