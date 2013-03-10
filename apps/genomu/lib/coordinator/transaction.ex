@@ -17,13 +17,13 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
       preflist = get_preflist(key, txn)
       ref = :erlang.phash2(preflist)
       case List.keyfind(entries, ref, 0) do
-      {_, cells} ->
-        cells = List.keystore(cells, key, 0, cell)
-        entries = List.keyreplace(entries, ref, 0, {ref, cells})
-      _ ->
-        quorum = qt.update(ref: ref, preflist: preflist)
-        entries = [{ref, [cell]}|entries]
-        quorums = [quorum|quorums]
+        {_, cells} ->
+          cells = List.keystore(cells, key, 0, cell)
+          entries = List.keyreplace(entries, ref, 0, {ref, cells})
+        _ ->
+          quorum = qt.update(ref: ref, preflist: preflist)
+          entries = [{ref, [cell]}|entries]
+          quorums = [quorum|quorums]
       end
       get_quorums(t, qt, txn, entries, quorums)
   end
