@@ -119,7 +119,7 @@ defmodule Genomu.Protocol do
     set_command_options(t, cmd.n(n))
   end
   defp set_command_options([{CO.r, r}|t], Genomu.Command[] = cmd) do
-    set_command_options(t, cmd.n(r))
+    set_command_options(t, cmd.r(r))
   end
   defp set_command_options([{CO.vnode, 0}|t], Genomu.Command[] = cmd) do
     set_command_options(t, cmd.vnode(:any))
@@ -133,7 +133,7 @@ defmodule Genomu.Protocol do
     set_txn_options(t, txn.n(n))
   end
   defp set_txn_options([{CO.r, r}|t], Genomu.Transaction[] = txn) do
-    set_txn_options(t, txn.n(r))
+    set_txn_options(t, txn.r(r))
   end
   defp set_txn_options([{CO.vnode, 0}|t], Genomu.Transaction[] = txn) do
     set_txn_options(t, txn.vnode(:any))
