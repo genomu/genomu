@@ -182,14 +182,20 @@ defmodule Genomu.Channel do
     {:reply, result, state}
   end
 
-  @spec commit(Genomu.gen_server_ref) :: :ok | {:error, reason :: term}
-  defcall commit, state: State[parent: parent, clock: clock, log: log] = state do
-    clock = sync(parent, clock)
-    txn = Genomu.Transaction.new(clock: clock, log: Enum.reverse(log))
-    Genomu.Coordinator.run(for: txn)
-    update(parent, self, clock)
-    stop(self)
-    {:reply, :ok, state.clock(clock)}
+  @spec commit(Genomu.gen_server_ref, Genomu.Transaction.t) :: :ok | {:error, reason :: term}
+  defcall commit(Genomu.Transaction[] = txn), state: State[parent: parent, clock: clock, log: log] = state do
+    case log do
+      [] ->
+        stop(self)
+        {:reply, :ok, state}
+      _ ->
+        clock = sync(parent, clock)
+        txn = txn.update(clock: clock, log: Enum.reverse(log))
+        Genomu.Coordinator.run(for: txn)
+        update(parent, self, clock)
+        stop(self)
+        {:reply, :ok, state.clock(clock)}
+    end
   end
 
   @spec discard(Genomu.gen_server_ref) :: :ok
