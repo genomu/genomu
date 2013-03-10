@@ -12,12 +12,7 @@ defmodule Genomu.Utils do
 
   @spec host_id :: binary
   def host_id do
-    {:ok, ifaces} = :inet.getifaddrs
-    Enum.find_value(ifaces, fn({_iface, opts}) ->
-                              if opts[:hwaddr] do
-                                list_to_binary(opts[:hwaddr])
-                              end
-                            end)
+    :mochiglobal.get(Genomu.Utils.HostID)
   end
 
 

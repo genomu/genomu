@@ -38,6 +38,17 @@ defmodule Genomu.App do
     protocol_port = env[:port]
     File.mkdir_p(Path.dirname(pid_file))
     File.write!(pid_file, System.get_pid)
+
+    # Detect host ID
+    {:ok, ifaces} = :inet.getifaddrs
+    host_id = Enum.find_value(ifaces, fn({_iface, opts}) ->
+                              if opts[:hwaddr] do
+                                list_to_binary(opts[:hwaddr])
+                              end
+                            end)
+    :mochiglobal.put(Genomu.Utils.HostID, host_id)
+    #
+
     case Genomu.Sup.start_link do
       {:ok, pid} ->
         :ok = :riak_core.register(:genomu, [{:vnode_module, Genomu.VNode}])
