@@ -66,6 +66,11 @@ defmodule Genomu.Protocol do
                 response = Genomu.Channel.commit(ch)
                 :gen_server.cast(me, {channel, response})
               end)
+          false ->
+             spawn(fn ->
+                response = Genomu.Channel.discard(ch)
+                :gen_server.cast(me, {channel, response})
+              end)
           _ ->
             case key do
               MsgPack.Map[map: [{0, [key, rev]}]] -> addr = {key, rev}

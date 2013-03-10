@@ -193,6 +193,12 @@ defmodule Genomu.Channel do
     {:reply, :ok, state.clock(clock)}
   end
 
+  @spec discard(Genomu.gen_server_ref) :: :ok
+  defcall discard, state: state do
+    stop(self)
+    {:reply, :ok, state}
+  end
+
   @spec stop(Genomu.gen_server_ref) :: :ok
   defcast stop, state: state do
     {:stop, :normal, state}
