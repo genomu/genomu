@@ -41,7 +41,11 @@ defmodule Genomu.Protocol do
     end
   end
 
-  def handle_cast({channel, response}, State[transport: transport, socket: socket] = state) do
+  def handle_cast({channel, response}, State[channels: channels, transport: transport, socket: socket] = state) do
+    t1 = Genomu.Utils.now_in_microseconds
+    [{_, t}] = :ets.lookup(channels, {:t, channel})
+    :ets.delete(channels, {:t, channel})
+    :folsom_metrics.notify({Genomu.Metrics, ChannelResponseTime}, t1 - t)
     transport.send(socket, channel <> handle_response(response))
     {:noreply, state}
   end
@@ -61,6 +65,7 @@ defmodule Genomu.Protocol do
       [{_, ch}] ->
         me = self
         {key, rest} = MsgPack.unpack(rest)
+        :ets.insert(channels, {{:t, channel}, Genomu.Utils.now_in_microseconds})
         case key do
           true ->
              spawn(fn ->

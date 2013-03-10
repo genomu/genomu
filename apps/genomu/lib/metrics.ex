@@ -13,6 +13,7 @@ defmodule Genomu.Metrics do
   def init(_) do
     M.new_counter({__MODULE__, Connections})
     M.new_counter({__MODULE__, Channels})
+    M.new_histogram({__MODULE__, ChannelResponseTime})
     {:ok, State.new}
   end
 
