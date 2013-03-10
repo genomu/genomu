@@ -52,7 +52,8 @@ defmodule Genomu.Channel do
       if new_file do
         crash_clock = ITC.seed
       else
-        crash_clock = :file.pread(file, 0, File.stat!(filename).size) |> ITC.decode
+        {:ok, bin} = :file.pread(file, 0, File.stat!(filename).size)
+        crash_clock = ITC.decode(bin)
       end
       state.crash_clock(crash_clock).clock(crash_clock)
     end
