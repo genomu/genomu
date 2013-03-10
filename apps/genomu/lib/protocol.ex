@@ -1,13 +1,12 @@
 defmodule Genomu.Protocol do
 
   use GenServer.Behaviour
- 
+
   def start_link(listener_pid, socket, transport, opts) do
     :proc_lib.start_link(__MODULE__, :init, [listener_pid, socket, transport, opts])
   end
 
-  defrecord State, socket: nil, transport: nil, 
-                   buffer: "",
+  defrecord State, socket: nil, transport: nil,
                    channels: nil
 
   def init(listener_pid, socket, transport, _opts) do
@@ -20,9 +19,9 @@ defmodule Genomu.Protocol do
     :gen_server.enter_loop(__MODULE__, [], state)
   end
 
-  def handle_info({:tcp, socket, data}, State[buffer: buffer, socket: socket] = state) do
-    {state, rest} = handle_packet(buffer <> data, state)
-    {:noreply, state.buffer(rest)}
+  def handle_info({:tcp, socket, data}, State[socket: socket] = state) do
+    state = handle_packet(data, state)
+    {:noreply, state}
   end
 
   def handle_info({:tcp_closed, socket}, State[socket: socket] = state) do
@@ -62,8 +61,8 @@ defmodule Genomu.Protocol do
         me = self
         {key, rest} = MsgPack.unpack(rest)
         case key do
-          true -> 
-             spawn(fn -> 
+          true ->
+             spawn(fn ->
                 response = Genomu.Channel.commit(ch)
                 :gen_server.cast(me, {channel, response})
               end)
@@ -72,16 +71,15 @@ defmodule Genomu.Protocol do
               MsgPack.Map[map: [{0, [key, rev]}]] -> addr = {key, rev}
               _ -> addr = key
             end
-            {type, rest} = MsgPack.unpack(rest)
-            {op, rest} = Genomu.Operation.deserialize(rest)
+            {type, op} = MsgPack.unpack(rest)
             cmd = command(type, op)
-            spawn(fn -> 
+            spawn(fn ->
                     response = Genomu.Channel.execute(ch, addr, cmd, [])
                     :gen_server.cast(me, {channel, response})
                   end)
         end
     end
-    {state, rest}
+    state
   end
 
   defp handle_response(:ok) do

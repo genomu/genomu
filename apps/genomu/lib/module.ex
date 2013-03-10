@@ -55,18 +55,12 @@ defmodule Genomu.Module do
       Module.put_attribute(module, :operation, {{:name, name}, operation})
       Module.put_attribute(module, :operation, {{:id, operation_id}, operation})
       quoted = quote do
-        def unquote(name)(data) do
-          Genomu.Operation.new(__MODULE__, unquote(name),
-                               MsgPack.pack(data))
-        end
         @id (@id + 1)
         @last_operation {unquote(name), unquote(args)}
         @name nil
       end
       Module.eval_quoted module, quoted
     end
-  end
-  def __on_definition__(_env, :def, _name, [_], _guards, _body) do
   end
   def __on_definition__(_env, _kind, _name, _, _guards, _body) do
   end

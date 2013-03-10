@@ -1,14 +1,4 @@
 defmodule Genomu do
-  @moduledoc """
-  Basic Genomu API module. It is recommended to `use Genomu`
-  since it will require Genomu modules containing common macros
-  """
-
-  defmacro __using__(_) do
-    quote do
-      require Genomu.Operation
-    end
-  end
 
   ##
   ## Core data types

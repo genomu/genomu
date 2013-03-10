@@ -71,8 +71,7 @@ defmodule Genomu.VNode do
              new_rev = rev
              new_value = @nil_value
            new_value ->  
-            serialized = Genomu.Operation.serialize(operation)
-            stage({key, new_rev}, serialized, new_value, state)
+            stage({key, new_rev}, operation, new_value, state)
          end
        {:get = cmd_name, operation} ->
          case apply_operation(operation, value) do
@@ -112,10 +111,9 @@ defmodule Genomu.VNode do
        Enum.reduce(log, value,
                    fn({k, r}, v) ->
                      if k == key do
-                       [{_, {_, serialized}}] = ETS.lookup(staging, {key, r})
-                       {op, ""} = Genomu.Operation.deserialize(serialized)
+                       [{_, {_, op}}] = ETS.lookup(staging, {key, r})
                        nv = apply_operation(op, v)
-                       ETS.insert(staging, {{key, r}, {nv, serialized}})
+                       ETS.insert(staging, {{key, r}, {nv, op}})
                        nv
                      else
                        v

@@ -6,7 +6,7 @@ defrecord Genomu.Command, n: 3, r: 2, vnodes: :any,
 
   record_type n: pos_integer, r: pos_integer, vnodes: :any | :primary,
               cell: Genomu.cell, 
-              type: type, operation: Genomu.operation,
+              type: type, operation: Genomu.Operation.serialized,
               new_revision: Genomu.revision
 
   @spec set(Keyword.t | Genomu.operation) :: t

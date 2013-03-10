@@ -113,17 +113,14 @@ defmodule Genomu.Module.List do
   @args 1
   def map(MsgPack.fix_array(len: len, rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     MsgPack.fix_array(len: len, rest: map_(rest, op, ""))
   end
   def map(MsgPack.array16(len: len, rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     MsgPack.array16(len: len, rest: map_(rest, op, ""))
   end
   def map(MsgPack.array32(len: len, rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     MsgPack.array32(len: len, rest: map_(rest, op, ""))
   end
 
@@ -137,19 +134,16 @@ defmodule Genomu.Module.List do
   @args 1
   def filter(MsgPack.fix_array(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     {len, filtered} = filter_(rest, op, 0, "")
     MsgPack.fix_array(len: len, rest: filtered)
   end
   def filter(MsgPack.array16(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     {len, filtered} = filter_(rest, op, 0, "")
     MsgPack.array16(len: len, rest: filtered)
   end
   def filter(MsgPack.array32(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     {len, filtered} = filter_(rest, op, 0, "")
     MsgPack.array32(len: len, rest: filtered)
   end
@@ -168,44 +162,41 @@ defmodule Genomu.Module.List do
   @args 1
   def reduce(MsgPack.fix_array(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
-    {_, _, acc0} = op
-    reduce_(rest, op, acc0)
+    acc0 = Genomu.Operation.argument(op)
+    op0 = Genomu.Operation.operation(op)
+    reduce_(rest, op0, acc0)
   end
   def reduce(MsgPack.array16(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
-    {_, _, acc0} = op
-    reduce_(rest, op, acc0)
+    acc0 = Genomu.Operation.argument(op)
+    op0 = Genomu.Operation.operation(op)
+    reduce_(rest, op0, acc0)
   end
   def reduce(MsgPack.array32(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
-    {_, _, acc0} = op
-    reduce_(rest, op, acc0)
+    acc0 = Genomu.Operation.argument(op)
+    op0 = Genomu.Operation.operation(op)
+    reduce_(rest, op0, acc0)
   end
 
   defp reduce_("", _, acc), do: acc
-  defp reduce_(bin, {m,f, _} = op, acc) do
+  defp reduce_(bin, op, acc) do
     {value, rest} = MsgPack.next(bin)
-    new_value = Genomu.Operation.apply({m, f, acc}, value)
+    new_value = Genomu.Operation.apply(op <> acc, value)
     reduce_(rest, op, new_value)
   end
 
   @args 1
   def any?(MsgPack.fix_array(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     any_(rest, op)
   end
   def any?(MsgPack.array16(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     any_(rest, op)
   end
   def any?(MsgPack.array32(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     any_(rest, op)
   end
 
@@ -243,17 +234,14 @@ defmodule Genomu.Module.List do
   @args 1
   def all?(MsgPack.fix_array(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     all_(rest, op)
   end
   def all?(MsgPack.array16(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     all_(rest, op)
   end
   def all?(MsgPack.array32(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
-    {op, ""} = Genomu.Operation.deserialize(op)
     all_(rest, op)
   end
 

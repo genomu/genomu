@@ -43,7 +43,6 @@ defmodule Genomu.App do
         {:ok, _} = :ranch.start_listener(Genomu.Protocol, 100,
                           :ranch_tcp, [port: protocol_port],
                           Genomu.Protocol, [])
-        setup_modules
         {:ok, pid}
       other -> other
     end
@@ -54,19 +53,4 @@ defmodule Genomu.App do
     pid_file = env[:pid_file]
     File.rm pid_file
   end
-
-  defp setup_modules do
-    quoted =
-    Enum.map(modules, fn(m) ->
-      quote do
-        def :module, [Genomu.Module.id(unquote(m))], [], do: unquote(m)
-      end
-    end)
-    Module.create Genomu.Commands, quoted, __ENV__
-  end
-
-  defp modules, do: [Genomu.Module.Core, Genomu.Module.Binary,
-                     Genomu.Module.List, Genomu.Module.Dict, Genomu.Module.Boolean,
-                     Genomu.Module.Number]
-
 end
