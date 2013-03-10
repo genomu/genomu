@@ -10,7 +10,7 @@
   "genomu_client": {:git,"https://github.com/genomu/genomu-elixir.git","f1fc38b17319eb8968eda2f2d23496e91f7fb135",[]},
   "genx": {:git,"https://github.com/yrashk/genx.git","85fc66c93e5e5711635e5d031a4031538b295ce0",[]},
   "hackney": {:git,"https://github.com/benoitc/hackney.git","88a7d65542fdd4f06e359d499da397d92825f054",[]},
-  "jsx": {:git,"https://github.com/talentdeficit/jsx.git","cb14b92a228e51f7bdcaa7eb17f035e4a5c0b47d",[]},
+  "jsx": {:git,"https://github.com/talentdeficit/jsx.git","58a9a5110f953e0b21f59f8b2dbc741a452e443f",[]},
   "lager": {:git,"https://github.com/basho/lager.git","7986ec43a15172e738d8d734b4c2db494de0dde7",[]},
   "meck": {:git,"https://github.com/eproxus/meck.git","d6230ae6acabfebaebf18fb08281659d1794ce2c",[]},
   "mimetypes": {:git,"https://github.com/spawngrid/mimetypes.git","0800544bbb684616651a2a1b30aa260132d17d37",[]},
