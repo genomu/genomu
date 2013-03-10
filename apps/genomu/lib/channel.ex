@@ -23,14 +23,14 @@ defmodule Genomu.Channel do
   end
 
   defrecord State, root: false, parent: nil,
-                   clock: nil, crash_clock: nil, crash_clock_filename: nil,
+                   clock: nil, crash_clock: nil, crash_clock_file: nil,
                    outstanding: [],
                    snapshot: nil, log: [],
                    children: nil do
 
     record_type root: atom | boolean, parent: nil | Genomu.gen_server_ref,
                 clock: nil | ITC.t, crash_clock: nil | ITC.t,
-                crash_clock_filename: String.t,
+                crash_clock_file: term,
                 outstanding: [ITC.t],
                 snapshot: nil | :ets.tid, log: [Genomu.Transaction.entry],
                 children: nil | :ets.tid
@@ -44,8 +44,16 @@ defmodule Genomu.Channel do
     def initialize(__MODULE__[root: root, clock: nil] = state) do
       data_dir = Application.environment(:genomu)[:data_dir]
       filename = Path.join(data_dir, "#{inspect root}")
-      state = state.crash_clock_filename(filename)
-      crash_clock = read_crash_clock(state)
+      unless File.exists?(filename) do
+        new_file = true
+      end
+      {:ok, file} = File.open(filename, [:binary, :raw, :read, :write])
+      state = state.crash_clock_file(file)
+      if new_file do
+        crash_clock = ITC.seed
+      else
+        crash_clock = :file.pread(file, 0, File.stat!(filename).size) |> ITC.decode
+      end
       state.crash_clock(crash_clock).clock(crash_clock)
     end
     def initialize(__MODULE__[] = state) do
@@ -58,18 +66,10 @@ defmodule Genomu.Channel do
     end
 
     @spec dump_crash_clock(t) :: t
-    defp dump_crash_clock(__MODULE__[crash_clock: crash_clock, crash_clock_filename: f] = state)  do
-      File.write(f, ITC.encode_binary(crash_clock))
+    defp dump_crash_clock(__MODULE__[crash_clock: crash_clock, crash_clock_file: f] = state)  do
+      :file.pwrite(f, 0, ITC.encode_binary(crash_clock))
+      :file.datasync(f)
       state
-    end
-
-    @spec read_crash_clock(t) :: ITC.t
-    defp read_crash_clock(__MODULE__[crash_clock_filename: f]) do
-      if File.exists?(f) do
-        File.read!(f) |> ITC.decode
-      else
-        ITC.seed
-      end
     end
 
     @spec memoize(Genomu.key, binary, t) :: t
@@ -214,7 +214,8 @@ defmodule Genomu.Channel do
   def terminate(_, State[root: false]) do
     :folsom_metrics.notify({{Genomu.Metrics, Channels}, {:dec, 1}})
   end
-  def terminate(_, State[]) do
+  def terminate(_, State[crash_clock_file: f]) do
+    File.close(f)
     :ok
   end
 
