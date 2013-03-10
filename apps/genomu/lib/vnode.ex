@@ -65,29 +65,28 @@ defmodule Genomu.VNode do
                       State[] = state) do
      {value, rev, txn_ref} = lookup_cell(cell, state)
      case cmd do
-       {cmd_name, operation} when cmd_name in [:apply, :set] ->
-         case apply_operation(operation, value) do
-           :error -> 
-             new_rev = rev
-             new_value = @nil_value
-           new_value ->  
-            stage({key, new_rev}, operation, new_value, state)
-         end
-       {:get = cmd_name, operation} ->
+       {:get, operation} ->
          case apply_operation(operation, value) do
            :error ->
              new_value = @nil_value
            new_value ->
              :ok
          end
-     end
-     case cmd_name do
-       :apply ->
-         VNode.reply(sender, {:ok, ref, state.partition, :ok})
-       :get ->
          VNode.reply(sender, {:ok, ref, state.partition, {{new_value, rev}, txn_ref}})
-       :set ->
-         VNode.reply(sender, {:ok, ref, state.partition, {{new_value, new_rev}, txn_ref}})
+       {cmd_name, operation} ->
+         case apply_operation(operation, value) do
+           :error ->
+             new_rev = rev
+             new_value = @nil_value
+           new_value ->
+            stage({key, new_rev}, operation, new_value, state)
+         end
+         case cmd_name do
+           :apply ->
+             VNode.reply(sender, {:ok, ref, state.partition, :ok})
+           :set ->
+             VNode.reply(sender, {:ok, ref, state.partition, {{new_value, new_rev}, txn_ref}})
+         end
      end
      {:noreply, state}
    end
