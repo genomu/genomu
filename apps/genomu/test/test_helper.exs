@@ -11,6 +11,7 @@ defmodule Genomu.TestCase do
     quote do
       @options unquote(options)
       import Genomu.TestCase
+      use Genomu.Client
     end
   end
 
