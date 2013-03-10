@@ -59,17 +59,17 @@ defmodule Genomu.Protocol do
       [] ->
         {:ok, ch} = Genomu.Channel.start
         Process.link(ch)
-        {_options, rest} = MsgPack.unpack(rest)
-        # TODO: pass options to the channel
-        :ets.insert(channels, [{channel, ch}, {ch, channel}])
-      [{_, ch}] ->
+        {MsgPack.Map[map: options], rest} = MsgPack.unpack(rest)
+        :ets.insert(channels, [{channel, ch, options}, {ch, channel}])
+      [{_, ch, options}] ->
         me = self
         {key, rest} = MsgPack.unpack(rest)
         :ets.insert(channels, {{:t, channel}, Genomu.Utils.now_in_microseconds})
         case key do
           true ->
+             txn = set_txn_options(options, Genomu.Transaction.new)
              spawn(fn ->
-                response = Genomu.Channel.commit(ch)
+                response = Genomu.Channel.commit(ch, txn)
                 :gen_server.cast(me, {channel, response})
               end)
           false ->
@@ -83,7 +83,7 @@ defmodule Genomu.Protocol do
               _ -> addr = key
             end
             {type, op} = MsgPack.unpack(rest)
-            cmd = command(type, op)
+            cmd = set_command_options(options, command(type, op))
             spawn(fn ->
                     response = Genomu.Channel.execute(ch, addr, cmd, [])
                     :gen_server.cast(me, {channel, response})
@@ -107,8 +107,39 @@ defmodule Genomu.Protocol do
       :folsom_metrics.notify({{Genomu.Metrics, Connections}, {:dec, 1}})
   end
 
+  alias Genomu.Constants.ChannelOptions, as: CO
+  require CO
+
   defp command(0, op), do: Genomu.Command.get(op)
   defp command(1, op), do: Genomu.Command.set(op)
   defp command(2, op), do: Genomu.Command.apply(op)
+
+  defp set_command_options([], cmd), do: cmd
+  defp set_command_options([{CO.n, n}|t], Genomu.Command[] = cmd) do
+    set_command_options(t, cmd.n(n))
+  end
+  defp set_command_options([{CO.r, r}|t], Genomu.Command[] = cmd) do
+    set_command_options(t, cmd.n(r))
+  end
+  defp set_command_options([{CO.vnode, 0}|t], Genomu.Command[] = cmd) do
+    set_command_options(t, cmd.vnode(:any))
+  end
+  defp set_command_options([{CO.vnode, 1}|t], Genomu.Command[] = cmd) do
+    set_command_options(t, cmd.vnode(:primary))
+  end
+
+  defp set_txn_options([], txn), do: txn
+  defp set_txn_options([{CO.n, n}|t], Genomu.Transaction[] = txn) do
+    set_txn_options(t, txn.n(n))
+  end
+  defp set_txn_options([{CO.r, r}|t], Genomu.Transaction[] = txn) do
+    set_txn_options(t, txn.n(r))
+  end
+  defp set_txn_options([{CO.vnode, 0}|t], Genomu.Transaction[] = txn) do
+    set_txn_options(t, txn.vnode(:any))
+  end
+  defp set_txn_options([{CO.vnode, 1}|t], Genomu.Transaction[] = txn) do
+    set_txn_options(t, txn.vnode(:primary))
+  end
 
 end

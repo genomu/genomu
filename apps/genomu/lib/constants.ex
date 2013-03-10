@@ -8,4 +8,9 @@ defmodule Genomu.Constants do
     defmacro host, do: 4
     defmacro log, do: 5
   end
+  defmodule ChannelOptions do
+    defmacro n, do: 0
+    defmacro r, do: 1
+    defmacro vnode, do: 2
+  end
 end
