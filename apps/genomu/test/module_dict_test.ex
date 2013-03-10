@@ -4,7 +4,6 @@ defmodule Genomu.Module.DictTest do
   use Genomu.TestCase
 
   alias Genomu.Client, as: C
-  alias Genomu.Client.Channel, as: Ch
   alias Genomu.API, as: API
 
   setup_all do
@@ -20,20 +19,20 @@ defmodule Genomu.Module.DictTest do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    Ch.set(ch, ["key"], API.Dict.value("k", 1))
-    Ch.set(ch, ["key"], API.Dict.value("k1", 1))
-    Ch.set(ch, ["key"], API.Dict.value("k", 2))
-    assert Ch.get(ch, ["key"], API.Dict.value("k")) == 2
+    C.set(ch, ["key"], API.Dict.value("k", 1))
+    C.set(ch, ["key"], API.Dict.value("k1", 1))
+    C.set(ch, ["key"], API.Dict.value("k", 2))
+    assert C.get(ch, ["key"], API.Dict.value("k")) == 2
   end
 
   test "keys", context do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    Ch.set(ch, ["key"], API.Dict.value("k", 1))
-    Ch.set(ch, ["key"], API.Dict.value("k1", 1))
-    Ch.set(ch, ["key"], API.Dict.value("k", 2))
-    assert Enum.sort(Ch.get(ch, ["key"], API.Dict.keys)) == 
+    C.set(ch, ["key"], API.Dict.value("k", 1))
+    C.set(ch, ["key"], API.Dict.value("k1", 1))
+    C.set(ch, ["key"], API.Dict.value("k", 2))
+    assert Enum.sort(C.get(ch, ["key"], API.Dict.keys)) == 
            Enum.sort(["k","k1","k"])
   end
 
@@ -41,10 +40,10 @@ defmodule Genomu.Module.DictTest do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    Ch.set(ch, ["key"], API.Dict.value("k", 1))
-    Ch.set(ch, ["key"], API.Dict.value("k1", 1))
-    Ch.set(ch, ["key"], API.Dict.value("k", 2))
-    assert Enum.sort(Ch.get(ch, ["key"], API.Dict.values)) == 
+    C.set(ch, ["key"], API.Dict.value("k", 1))
+    C.set(ch, ["key"], API.Dict.value("k1", 1))
+    C.set(ch, ["key"], API.Dict.value("k", 2))
+    assert Enum.sort(C.get(ch, ["key"], API.Dict.values)) == 
            Enum.sort([1, 1, 2])
   end
 

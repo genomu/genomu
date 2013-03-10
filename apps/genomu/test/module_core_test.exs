@@ -4,7 +4,6 @@ defmodule Genomu.Module.CoreTest do
   use Genomu.TestCase
 
   alias Genomu.Client, as: C
-  alias Genomu.Client.Channel, as: Ch
   alias Genomu.API, as: API
 
   setup_all do
@@ -20,16 +19,16 @@ defmodule Genomu.Module.CoreTest do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    assert Ch.get(ch, ["key"], API.Core.identity) == nil
-    assert Ch.set(ch, ["key"], API.Core.identity("123")) == "123"
-    assert Ch.get(ch, ["key"], API.Core.identity) == "123"
+    assert C.get(ch, ["key"], API.Core.identity) == nil
+    assert C.set(ch, ["key"], API.Core.identity("123")) == "123"
+    assert C.get(ch, ["key"], API.Core.identity) == "123"
   end
 
   test "compose", context do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    assert Ch.get(ch, ["key"], API.Core.compose(API.Core.identity, API.Core.identity("123"))) == "123"
+    assert C.get(ch, ["key"], API.Core.compose(API.Core.identity, API.Core.identity("123"))) == "123"
   end
 
 end
