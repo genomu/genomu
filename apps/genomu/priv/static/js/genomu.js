@@ -12,6 +12,7 @@ $(document).idle({
 })
 
 app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, $timeout) {
+    var Metrics = $resource('/metrics');
     var Instance = $resource('/instance');
     var Cluster = $resource('/cluster');
     var ClusterMembership = $resource('/cluster/membership');
@@ -25,6 +26,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
     $scope.clusterMembership = ClusterMembership.get();
     $scope.clusterMembershipPlan = ClusterMembershipPlan.get();
     $scope.clusterDiscovery = ClusterDiscovery.get();
+    $scope.metrics = Metrics.get();
 
     $scope.ownership = function(instance) {
       return (instance.indices.length * 100 / $scope.cluster.num_partitions)
@@ -112,6 +114,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
       $scope.clusterMembership.$get();
       $scope.clusterMembershipPlan.$get();
       $scope.clusterDiscovery.$get();
+      $scope.metrics.$get();
     }
 
     var refresh_ = function() {
