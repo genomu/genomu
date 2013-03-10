@@ -13,12 +13,6 @@ defmodule Genomu.Module do
       @module_id unquote(opts[:id])
       @module_name unquote((opts[:name] || __MODULE__) |> to_binary)
 
-      defimpl MsgPack.Protocol, for: __MODULE__ do
-        def pack(operation) do
-          Genomu.Operation.serialize(operation) |> MsgPack.pack
-        end
-      end
-
       @id 0
     end
   end
