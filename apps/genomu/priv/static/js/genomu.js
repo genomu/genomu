@@ -156,19 +156,19 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                                                concat($scope.metricCoordinationTime).
                                                filter(function(v) { return v != null }));
          var data = $scope.metricChannelResponseTime.map(function(v, i) {
-           if (v == null) v = n.ChannelResponseTime.arithmetic_mean;
+           if (v == null || v == 0) v = n.ChannelResponseTime.arithmetic_mean;
            return [i + 1, v];
          });
          var pdata = $scope.metricPartitionResponseTime.map(function(v, i) {
-           if (v == null) v = n.PartitionResponseTime.arithmetic_mean;
+           if (v == null || v == 0) v = n.PartitionResponseTime.arithmetic_mean;
            return [i + 1, v];
          });
          var qdata = $scope.metricQuorumTime.map(function(v, i) {
-           if (v == null) v = n.QuorumTime.arithmetic_mean;
+           if (v == null || v == 0) v = n.QuorumTime.arithmetic_mean;
            return [i + 1, v];
          });
          var cdata = $scope.metricCoordinationTime.map(function(v, i) {
-           if (v == null) v = n.CoordinationTime.arithmetic_mean;
+           if (v == null || v == 0) v = n.CoordinationTime.arithmetic_mean;
            return [i + 1, v];
          });
 
