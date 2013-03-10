@@ -104,39 +104,40 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                    {params: {instance_url: $scope.instance.instance_url, method: 'POST'}});
     }
 
-    $scope.metricChannelResponseTime = [];
+    if ($("#metric-ChannelResponseTime").length > 0) {
+      $scope.metricChannelResponseTime = [];
 
-    for (var i = 0; i < 20; i++) {
-      $scope.metricChannelResponseTime.push(null);
-    }
-
-    $scope.graphChannelResponseTime = $.plot($("#metric-ChannelResponseTime"), [], {
-      series: { shadowSize: 1 },
-      lines: { show: true, lineWidth: 3, fill: true, fillColor: { colors: [ { opacity: 0.4 }, { opacity: 0.4 } ] }},
-      yaxis: { show: true, min: 0, tickFormatter: function (v) { return v + " µs"; }},
-      xaxis: { show: false, min: 0, max: 20 },
-      colors: ["#FA5833"],
-      grid: { tickColor: "#f9f9f9",
-          borderWidth: 0,
+      for (var i = 0; i < 20; i++) {
+        $scope.metricChannelResponseTime.push(null);
       }
-    });
+
+      $scope.graphChannelResponseTime = $.plot($("#metric-ChannelResponseTime"), [], {
+        series: { shadowSize: 1 },
+        lines: { show: true, lineWidth: 3, fill: true, fillColor: { colors: [ { opacity: 0.4 }, { opacity: 0.4 } ] }},
+        yaxis: { show: true, min: 0, tickFormatter: function (v) { return v + " µs"; }},
+        xaxis: { show: false, min: 0, max: 20 },
+        colors: ["#FA5833"],
+        grid: { tickColor: "#f9f9f9",
+            borderWidth: 0,
+        }
+      });
 
 
-    $scope.$watch('metrics.ChannelResponseTime.arithmetic_mean', function(n) {
-       if (typeof n == 'undefined') return;
-       $scope.metricChannelResponseTime.push(n);
-       $scope.metricChannelResponseTime.shift();
-       var opts = $scope.graphChannelResponseTime.getOptions();
-       opts.yaxis.max = Math.max.apply(this, $scope.metricChannelResponseTime.filter(function(v) { return v != null }));
-       var data = $scope.metricChannelResponseTime.map(function(v, i) {
-         if (v == null) v = n;
-         return [i + 1, v];
-       });
-       $scope.graphChannelResponseTime.setData([ data ]);
-       $scope.graphChannelResponseTime.setupGrid();
-       $scope.graphChannelResponseTime.draw();
-    });
-
+      $scope.$watch('metrics.ChannelResponseTime.arithmetic_mean', function(n) {
+         if (typeof n == 'undefined') return;
+         $scope.metricChannelResponseTime.push(n);
+         $scope.metricChannelResponseTime.shift();
+         var opts = $scope.graphChannelResponseTime.getOptions();
+         opts.yaxis.max = Math.max.apply(this, $scope.metricChannelResponseTime.filter(function(v) { return v != null }));
+         var data = $scope.metricChannelResponseTime.map(function(v, i) {
+           if (v == null) v = n;
+           return [i + 1, v];
+         });
+         $scope.graphChannelResponseTime.setData([ data ]);
+         $scope.graphChannelResponseTime.setupGrid();
+         $scope.graphChannelResponseTime.draw();
+      });
+    }
     $scope.page = function() {
       return window.location.pathname + window.location.hash;
     }
