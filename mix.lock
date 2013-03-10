@@ -1,7 +1,7 @@
 [ "basho_stats": {:git,"https://github.com/basho/basho_stats.git","08b37f5295b0b0275a6ee5ca446ff725005d1277",[]},
   "bear": {:git,"https://github.com/boundary/bear.git","b1882d7ee88e775d961a2678e4fafecef7f77705",[tag: "0.1.1"]},
   "cowboy": {:git,"https://github.com/extend/cowboy.git","02ed254daa2df86ce8eff7f68b5f202ac9d31a7d",[]},
-  "dnssd": {:git,"https://github.com/yrashk/dnssd_erlang.git","1bb3be7812534d38bc5c1fe39811f7489b42462a",[]},
+  "dnssd": {:git,"https://github.com/andrewtj/dnssd_erlang.git","9bf2a7b9ff598c4579de7f6c029916ed5d5a1193",[]},
   "exconfig": {:git,"https://github.com/yrashk/exconfig.git","9f02d06c3fba132839cff1f9a639fd63aa2155a3",[]},
   "exlager": {:git,"https://github.com/khia/exlager.git","98e2bfc1304061b1bc8cc7770fe6b00b5e9c939e",[]},
   "exmsgpack": {:git,"https://github.com/yrashk/exmsgpack.git","059f4bc8e03f39e70bf5701f11ee0c7d0c1f5ac5",[]},

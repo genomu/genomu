@@ -51,7 +51,7 @@ defmodule Genomu.Mixfile do
        {:ranch,       github: "extend/ranch", tag: "0.6.1"},
      {:hackney,       github: "benoitc/hackney"},
        {:mimetypes,   github: "spawngrid/mimetypes"},
-     {:dnssd,         github: "yrashk/dnssd_erlang"},
+     {:dnssd,         github: "andrewtj/dnssd_erlang"},
     ] ++ deps(Mix.env)
   end
 
