@@ -74,17 +74,17 @@ defmodule Genomu.Channel do
       Path.join(data_dir, "#{inspect root}")
     end
 
-    @spec memoize(Genomu.key, t) :: t
-    def memoize(key, __MODULE__[snapshot: snapshot, clock: clock, log: log] = state) do
-      :ets.insert(snapshot, {key, clock})
-      state.log([{key, ITC.encode_binary(clock)}|log])
+    @spec memoize(Genomu.key, binary, t) :: t
+    def memoize(key, rev, __MODULE__[snapshot: snapshot, log: log] = state) do
+      :ets.insert(snapshot, {key, rev})
+      state.log([{key, rev}|log])
     end
 
     @spec lookup(Genomu.key, t) :: nil | ITC.t
     def lookup(key, __MODULE__[snapshot: snapshot]) do
       case :ets.lookup(snapshot, key) do
         [] -> nil
-        [{^key, clock}] -> ITC.encode_binary(clock)
+        [{^key, rev}] -> rev
       end
     end
 
@@ -178,7 +178,7 @@ defmodule Genomu.Channel do
     coord_options = [for: cmd] |>
                     Keyword.merge(options)
     result = Genomu.Coordinator.run(coord_options)
-    state = memoize(key, cmd, clock, state)
+    state = memoize(key, cmd, clock, revision, state)
     {:reply, result, state}
   end
 
@@ -218,12 +218,12 @@ defmodule Genomu.Channel do
   defp next_clock(clock, Genomu.Command[type: :get]), do: clock
   defp next_clock(clock, _), do: ITC.event(clock)
 
-  @spec memoize(Genomu.key, Genomu.command, ITC.t, State.t) :: State.t
-  defp memoize(_key, Genomu.Command[type: :get], _clock, state) do
+  @spec memoize(Genomu.key, Genomu.command, ITC.t, binary, State.t) :: State.t
+  defp memoize(_key, Genomu.Command[type: :get], _clock, _rev, state) do
     state
   end
-  defp memoize(key, _cmd, clock, State[] = state) do
-    state.clock(clock).memoize(key)
+  defp memoize(key, _cmd, clock, rev, State[] = state) do
+    state.clock(clock).memoize(key, rev)
   end
 
   defp ensure_snapshot(State[snapshot: nil] = state) do
