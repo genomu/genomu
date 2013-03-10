@@ -22,7 +22,7 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Command do
     {:ok, message, state}
   end
 
-  def handle_response(Genomu.Command[], response, partition, quorum, state) do
+  def handle_response(Genomu.Command[], response, partition, quorum, State[] = state) do
     state = state.update_acc([{partition, response}|&1])
     {:ok, quorum, state}
   end
