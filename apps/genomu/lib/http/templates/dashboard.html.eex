@@ -54,6 +54,13 @@
                <div id="metric-ProcessingTime" style="height:300px;"></div>
             </div>
           </div>
+          <div class="widget span6">
+            <h2><span class="glyphicons fire"><i></i></span>System</h2>
+            <hr>
+            <div class="content">
+               <div id="metric-System" style="height:300px;"></div>
+            </div>
+          </div>
       </div>
       
       </div>  

@@ -11,6 +11,8 @@ defmodule Genomu.HTTP.Metrics do
   end
 
   def to_json(req, state) do
+    mem_metrics = :memsup.get_system_memory_data
+    sys_metrics = :folsom_vm_metrics.get_system_info
     json =
     lc {Genomu.Metrics, name} = metric inlist :folsom_metrics.get_metrics do
       [{_, opts}] = :folsom_metrics.get_metric_info(metric)
@@ -24,8 +26,12 @@ defmodule Genomu.HTTP.Metrics do
         _ ->
         {inspect(name),
           :folsom_metrics.get_metric_value(metric)}
-      end
-    end
+      end 
+    end ++ 
+      [{"Memory", mem_metrics},
+       {"Processes", sys_metrics[:process_count]},
+       {"CPU", [utilization: :cpu_sup.util, avg1: :cpu_sup.avg1, avg5: :cpu_sup.avg5, avg15: :cpu_sup.avg15]},
+      ]
     {json |> maybe_jsonp(req), req, state}
   end
 

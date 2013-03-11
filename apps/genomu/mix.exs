@@ -17,7 +17,8 @@ defmodule Genomu.Mixfile do
                     :compiler, :syntax_tools, ## riak_core
                     :jsx,
                     :cowboy, :ranch,
-                    :hackney, :dnssd
+                    :hackney, :dnssd,
+                    :os_mon,
                    ] ++ env_applications(Mix.env),
      included_applications: [:riak_core],
      version: version,

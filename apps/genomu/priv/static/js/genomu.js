@@ -181,6 +181,95 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
          $scope.graphProcessingTime.draw();
       }, true);
     }
+
+
+    if ($("#metric-System").length > 0) {
+      $scope.metricMemory = [];
+      $scope.metricLoadAvg = [];
+      $scope.metricUtil = [];
+      $scope.metricProcesses = [];
+
+      for (var i = 0; i < 20; i++) {
+        $scope.metricMemory.push(null);
+        $scope.metricLoadAvg.push(null);
+        $scope.metricUtil.push(null);
+        $scope.metricProcesses.push(null);
+      }
+
+      $scope.graphSystem = $.plot($("#metric-System"), [{label: "Available Memory", data: []},
+                                                        {label: "Load Avg", data: []},
+                                                        {label: "CPU Utilization", data: []},
+                                                        {label: "Processes", data: []},
+                                                        ], {
+        series: { shadowSize: 1 },
+        lines: { show: true, lineWidth: 3, fill: true, fillColor: { colors: [ { opacity: 0.4 }, { opacity: 0.4 } ] }},
+        yaxes: [{ position: 'left', show: true, min: 0, tickFormatter: function (v) { return v + " Mb"; }},
+                { position: 'left', show: true, min: 0, max: 100, tickFormatter: function (v) { return v.toFixed(2); }},
+                { position: 'right', show: true, min: 0, max: 100},
+                { position: 'right', show: true, min: 0}],
+        xaxis: { show: false, min: 0, max: 20 },
+        colors: ["#FA5833"],
+        legend: { position: "sw" },
+        grid: { tickColor: "#f9f9f9",
+            borderWidth: 0,
+        }
+      });
+
+      var opts = $scope.graphSystem.getOptions();
+      opts.yaxes.forEach(function(yaxis, i) {
+        var originalFormatter = yaxis.tickFormatter || function(v) { return v; }
+        yaxis.tickFormatter = function(v) {
+          return '<span style="color: ' + opts.colors[i] + '">' + originalFormatter(v) + '</span>';
+        }
+      });
+
+
+      $scope.$watch('metrics', function(n) {
+         if (typeof n.Memory == 'undefined' || typeof n.CPU == 'undefined') return;
+         $scope.metricMemory.push(n.Memory.free_memory / 1024 / 1024);
+         $scope.metricMemory.shift();
+         $scope.metricLoadAvg.push(n.CPU.avg1 / 256);
+         $scope.metricLoadAvg.shift();
+         $scope.metricUtil.push(n.CPU.utilization * 100);
+         $scope.metricUtil.shift();
+         $scope.metricProcesses.push(n.Processes);
+         $scope.metricProcesses.shift();
+
+         var opts = $scope.graphSystem.getOptions();
+         opts.yaxes[0].max = Math.max.apply(this, $scope.metricMemory.
+                                                  filter(function(v) { return v != null }));
+         opts.yaxes[1].max = Math.max.apply(this, $scope.metricLoadAvg.
+                                                  filter(function(v) { return v != null }));
+         opts.yaxes[3].max = Math.max.apply(this, $scope.metricProcesses.
+                                                  filter(function(v) { return v != null }));
+
+         var mdata = $scope.metricMemory.map(function(v, i) {
+           if (v == null || v == 0) v = n.Memory.free_memory / 1024 / 1024;
+           return [i + 1, v];
+         });
+         var ladata = $scope.metricLoadAvg.map(function(v, i) {
+           if (v == null || v == 0) v = n.CPU.avg1 / 256;
+           return [i + 1, v];
+         });
+         var udata = $scope.metricUtil.map(function(v, i) {
+           if (v == null || v == 0) v = n.CPU.utilization * 100;
+           return [i + 1, v];
+         });
+         var pdata = $scope.metricUtil.map(function(v, i) {
+           if (v == null || v == 0) v = n.Processes;
+           return [i + 1, v];
+         });
+
+         $scope.graphSystem.setData([{label: "Available Memory", data: mdata},
+                                     {label: "Load Avg", data: ladata},
+                                     {label: "CPU Utilization", data: udata},
+                                     {label: "Processes", data: pdata},
+                                    ]);
+         $scope.graphSystem.setupGrid();
+         $scope.graphSystem.draw();
+      }, true);
+    }
+
     $scope.page = function() {
       return window.location.pathname + window.location.hash;
     }
