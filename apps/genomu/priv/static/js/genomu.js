@@ -263,7 +263,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
            if (v == 0) v = null;
            return [i + 1, v];
          });
-         var pdata = $scope.metricUtil.map(function(v, i) {
+         var pdata = $scope.metricProcesses.map(function(v, i) {
            if (v == 0) v = null;
            return [i + 1, v];
          });
