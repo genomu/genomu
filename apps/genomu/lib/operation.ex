@@ -44,33 +44,27 @@ defmodule Genomu.Operation do
     module_id = Genomu.Module.id(module)
     operation_id = Genomu.Module.operation(module, {:name, operation})[:id]
     binary = binary_to_list(MsgPack.pack(module_id) <> MsgPack.pack(operation_id))
-
-    args = quote do: [<< unquote_splicing(binary),
-                      argument :: binary >>, value]
-    body = quote do: unquote(module).unquote(operation)(value, argument)
-    def :apply, args, [], do: body
+    def apply(<< unquote_splicing(binary), argument :: binary>>, value) do
+      unquote(module).unquote(operation)(value, argument)
+    end
   end
 
   lc module inlist @modules, {operation, _attrs} inlist Genomu.Module.operations(module) do
     module_id = Genomu.Module.id(module)
     operation_id = Genomu.Module.operation(module, {:name, operation})[:id]
     binary = binary_to_list(MsgPack.pack(module_id) <> MsgPack.pack(operation_id))
-
-    args = quote do: [<< unquote_splicing(binary),
-                      argument :: binary >>]
-    body = quote do: argument
-    def :argument, args, [], do: body
+    def argument(<< unquote_splicing(binary), argument :: binary>>) do
+      argument
+    end
   end
 
   lc module inlist @modules, {operation, _attrs} inlist Genomu.Module.operations(module) do
     module_id = Genomu.Module.id(module)
     operation_id = Genomu.Module.operation(module, {:name, operation})[:id]
     binary = MsgPack.pack(module_id) <> MsgPack.pack(operation_id)
-
-    args = quote do: [<< unquote_splicing(binary_to_list(binary)),
-                      _ :: binary >>]
-    body = quote do: unquote(binary)
-    def :operation, args, [], do: body
+    def operation(<< unquote_splicing(binary_to_list(binary)), _ :: binary >>) do
+      unquote(binary)
+    end
   end
 
 
