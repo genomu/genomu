@@ -164,19 +164,19 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                                                concat($scope.metricCoordinationTime).
                                                filter(function(v) { return v != null }));
          var data = $scope.metricChannelResponseTime.map(function(v, i) {
-           if (v == null || v == 0) v = n.ChannelResponseTime.arithmetic_mean;
+           if (v == 0) v = null;
            return [i + 1, v];
          });
          var pdata = $scope.metricPartitionResponseTime.map(function(v, i) {
-           if (v == null || v == 0) v = n.PartitionResponseTime.arithmetic_mean;
+           if (v == 0) v = null;
            return [i + 1, v];
          });
          var qdata = $scope.metricQuorumTime.map(function(v, i) {
-           if (v == null || v == 0) v = n.QuorumTime.arithmetic_mean;
+           if (v == 0) v = null;
            return [i + 1, v];
          });
          var cdata = $scope.metricCoordinationTime.map(function(v, i) {
-           if (v == null || v == 0) v = n.CoordinationTime.arithmetic_mean;
+           if (v == 0) v = null;
            return [i + 1, v];
          });
 
@@ -252,19 +252,19 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                                                   filter(function(v) { return v != null }));
 
          var mdata = $scope.metricMemory.map(function(v, i) {
-           if (v == null || v == 0) v = n.Memory.free_memory / 1024 / 1024;
+           if (v == 0) v = null;
            return [i + 1, v];
          });
          var ladata = $scope.metricLoadAvg.map(function(v, i) {
-           if (v == null || v == 0) v = n.CPU.avg1 / 256;
+           if (v == 0) v = null;
            return [i + 1, v];
          });
          var udata = $scope.metricUtil.map(function(v, i) {
-           if (v == null || v == 0) v = n.CPU.utilization * 100;
+           if (v == 0) v = null;
            return [i + 1, v];
          });
          var pdata = $scope.metricUtil.map(function(v, i) {
-           if (v == null || v == 0) v = n.Processes;
+           if (v == 0) v = null;
            return [i + 1, v];
          });
 
