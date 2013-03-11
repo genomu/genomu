@@ -5,14 +5,14 @@ var idleNoty = null;
 $(document).idle({
   onIdle: function(){
     window.idleNoty = $.noty({modal: true, modal: true, timeout: false,
-                              text: 'After 10 seconds of inactivity, pausing data polling...'});
+                              text: 'After 30 seconds of inactivity, pausing data polling...'});
     window.idle = true;
   },
   onActive: function(){
     $.noty.close(window.idleNoty);
     window.idle = false;
   },
-  idle: 10000
+  idle: 30000
 })
 
 app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, $timeout) {
