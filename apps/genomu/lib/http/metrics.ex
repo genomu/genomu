@@ -30,9 +30,16 @@ defmodule Genomu.HTTP.Metrics do
     end ++ 
       [{"Memory", mem_metrics},
        {"Processes", sys_metrics[:process_count]},
-       {"CPU", [utilization: :cpu_sup.util, avg1: :cpu_sup.avg1, avg5: :cpu_sup.avg5, avg15: :cpu_sup.avg15]},
+       {"CPU", [utilization: cpu_util, avg1: :cpu_sup.avg1, avg5: :cpu_sup.avg5, avg15: :cpu_sup.avg15]},
       ]
     {json |> maybe_jsonp(req), req, state}
+  end
+
+  defp cpu_util do
+    case :os.type do
+      {:unix, :darwin} -> 0
+      _ -> :cpu_sup.util
+    end
   end
 
 end
