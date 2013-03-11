@@ -15,5 +15,14 @@ defmodule Genomu.Utils do
     :mochiglobal.get(Genomu.Utils.HostID)
   end
 
+ 
+  def pad_bitstring(bitstring, pad) do
+    padding = pad - rem(bit_size(bitstring),pad)
+    if padding == pad do
+      bitstring
+    else 
+      << bitstring :: bitstring, 0 :: size(padding) >>
+    end
+  end
 
 end

@@ -35,7 +35,15 @@ defmodule Genomu.Module.BinaryTest do
 
     {:ok, ch} = C.begin(conn)
     C.set(ch, ["key"], API.Core.identity("Hello"))    
-    assert C.get(ch, ["key"], API.Binary.range(1, 3)) == "ell"
+    assert C.get(ch, ["key"], API.Binary.range(1, 3)) == "ell"  
+  end
+
+  test "range with custom unit size", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    C.set(ch, ["key"], API.Core.identity("Hello"))    
+    assert C.get(ch, ["key"], API.Binary.range(4, 0, 2)) == "H"
   end
 
   test "size", context do
