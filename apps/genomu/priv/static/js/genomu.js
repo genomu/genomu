@@ -137,6 +137,14 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
         }
       });
 
+      var opts = $scope.graphProcessingTime.getOptions();
+      opts.yaxes.forEach(function(yaxis, i) {
+        var originalFormatter = yaxis.tickFormatter || function(v) { return v; }
+        yaxis.tickFormatter = function(v) {
+          return '<span style="color: ' + opts.colors[i] + '">' + originalFormatter(v) + '</span>';
+        }
+      });
+
 
       $scope.$watch('metrics', function(n) {
          if (typeof n.ChannelResponseTime == 'undefined') return;
