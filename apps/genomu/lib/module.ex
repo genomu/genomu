@@ -76,7 +76,7 @@ defmodule Genomu.Module do
           name = attrs[:public_name] |> to_binary
           {_, _, _, _, doc} = List.keyfind(module.__info__(:docs), {attrs[:name], 2}, 0)
           doc = doc || :null
-          {name, [id: attrs[:id], name: name, args: attrs[:args], doc: doc]}
+          [id: attrs[:id], name: name, args: attrs[:args], doc: doc]
          end),
     ] |> :jsx.to_json(indent: 2)
     dir = Path.expand("../../priv/modules", __FILE__)
