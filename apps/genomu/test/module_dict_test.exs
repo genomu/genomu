@@ -33,7 +33,7 @@ defmodule Genomu.Module.DictTest do
     C.set(ch, ["key"], API.Dict.value("k1", 1))
     C.set(ch, ["key"], API.Dict.value("k", 2))
     assert Enum.sort(C.get(ch, ["key"], API.Dict.keys)) == 
-           Enum.sort(["k","k1","k"])
+           Enum.sort(["k","k1"])
   end
 
   test "values", context do
@@ -44,7 +44,7 @@ defmodule Genomu.Module.DictTest do
     C.set(ch, ["key"], API.Dict.value("k1", 1))
     C.set(ch, ["key"], API.Dict.value("k", 2))
     assert Enum.sort(C.get(ch, ["key"], API.Dict.values)) == 
-           Enum.sort([1, 1, 2])
+           Enum.sort([1, 2])
   end
 
 end
