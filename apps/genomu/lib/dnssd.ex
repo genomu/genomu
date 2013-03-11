@@ -22,7 +22,7 @@ defmodule Genomu.DNSSD do
   end
 
   def handle_call(:available_instances, _from, State[instances: instances] = state) do
-    result = Enum.map(:ets.match(instances, {{:_, :_}, :'$1'}), fn([v]) -> v end) |>
+    result = Enum.filter_map(:ets.match(instances, {:_, :'$1'}), fn([v]) -> not is_tuple(v) end, fn([v]) -> v end) |>
              Enum.uniq
     {:reply, result, state}
   end
@@ -30,7 +30,7 @@ defmodule Genomu.DNSSD do
   def handle_cast(:announce, State[] = state) do
     env = Application.environment(:genomu)
     {:ok, ref} =
-    SD.register(Genomu.instance_url,
+    SD.register("#{Genomu.instance_name} @ #{Genomu.instance_url}",
                 "_genomu._tcp", env[:port],
                 [
                   name: Genomu.instance_name,
@@ -49,21 +49,23 @@ defmodule Genomu.DNSSD do
   def handle_info({:dnssd, browser, {:browse, :add, {description, service, domain}}},
                   State[browser: browser, instances: instances] = state) do
     {:ok, ref} = SD.resolve(description, service, domain)
-    :ets.insert(instances, {ref, {description, domain}})
+    :ets.insert(instances, [{ref, {description, service, domain}}, {description, ref}])
     {:noreply, state}
   end
 
-  def handle_info({:dnssd, browser, {:browse, :remove, {_description, _service, domain}}},
+  def handle_info({:dnssd, browser, {:browse, :remove, {description, _service, _domain}}},
                   State[browser: browser, instances: instances] = state) do
-    :ets.match_delete(instances, {{domain, :_}, :_})
+    :ets.delete(instances, description)
     {:noreply, state}
   end
 
   def handle_info({:dnssd, ref, {:resolve, {domain, port, txt}}},
                   State[instances: instances] = state) do
     SD.stop(ref)
+    [{_, {description, service, _domain}}] = :ets.lookup(instances, ref)
+    :ets.delete(instances, ref)
     if txt["cluster_name"] == Genomu.Cluster.name do
-      :ets.insert(instances, {{domain, port}, txt})
+      :ets.insert(instances, {description, txt})
     end
     {:noreply, state}
   end
