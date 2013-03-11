@@ -38,7 +38,7 @@ defmodule Genomu.VNode do
    @spec init([non_neg_integer]) :: {:ok, State.t}
    def init([partition]) do
      :erlang.process_flag(:trap_exit, true)
-     {:ok, s} = Genomu.Storage.init(Genomu.Storage.Memory.new, [])
+     {:ok, s} = Genomu.Storage.init(Application.environment(:genomu)[:storage], [])
      {:ok, State.new(storage: s, partition: partition)}
    end
 

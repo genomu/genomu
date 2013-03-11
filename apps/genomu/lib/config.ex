@@ -23,6 +23,8 @@ defmodule Genomu.Config do
   defproperty port, default: 9101
   @shortdoc "Root channels"
   defproperty root_channels, default: 8
+  @shortdoc "Storage"
+  defproperty storage, default: Genomu.Storage.Memory.new
 
   def sys_config(config) do
     [
@@ -34,6 +36,7 @@ defmodule Genomu.Config do
        port: config.port,
        instance_name: config.instance_name,
        root_channels: config.root_channels,
+       storage: config.storage,
      ],
      riak_core: [
        ring_state_dir: to_char_list(Path.join([config.data_dir, to_binary(config.instance_name), "ring"])),
