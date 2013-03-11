@@ -102,6 +102,84 @@ defmodule Genomu.Module.Dict do
     end
   end
 
+  @args 2
+  def update(MsgPack.fix_map(len: 15, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+    {key, update} = MsgPack.next(pair)
+    {update, ""} = MsgPack.unpack(update)
+    {new, appendp} = update_(rest, key, update)
+    if appendp do
+      MsgPack.map16(len: 16, rest: new)
+    else
+      MsgPack.fix_map(len: 15, rest: new)
+    end
+  end
+  def update(MsgPack.fix_map(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+    {key, update} = MsgPack.next(pair)
+    {update, ""} = MsgPack.unpack(update)
+    {new, appendp} = update_(rest, key, update)
+    if appendp do
+      MsgPack.fix_map(len: len + 1, rest: new)
+    else
+      MsgPack.fix_map(len: len, rest: new)
+    end
+  end
+  def update(MsgPack.map16(len: 0x10000, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+    {key, update} = MsgPack.next(pair)
+    {update, ""} = MsgPack.unpack(update)
+    {new, appendp} = update_(rest, key, update)
+    if appendp do
+      MsgPack.map32(len: 0x10000 + 1, rest: new)
+    else
+      MsgPack.map16(len: 15, rest: new)
+    end
+  end
+  def update(MsgPack.map16(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+    {key, update} = MsgPack.next(pair)
+    {update, ""} = MsgPack.unpack(update)
+    {new, appendp} = update_(rest, key, update)
+    if appendp do
+      MsgPack.map16(len: len + 1, rest: new)
+    else
+      MsgPack.map16(len: len, rest: new)
+    end
+  end
+  def update(MsgPack.map32(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+    {key, update} = MsgPack.next(pair)
+    {update, ""} = MsgPack.unpack(update)
+    {new, appendp} = update_(rest, key, update)
+    if appendp do
+      MsgPack.map32(len: len + 1, rest: new)
+    else
+      MsgPack.map32(len: len, rest: new)
+    end
+  end
+  def update(@nil_value, MsgPack.fix_array(len: 2, rest: pair)) do
+    {key, update} = MsgPack.next(pair)
+    {update, ""} = MsgPack.unpack(update)
+    {new, true} = update_("", key, update)
+    MsgPack.fix_map(len: 1, rest: new)
+  end
+
+  defp update_(bin, key, update) do
+    update_(bin, key, update, "")
+  end
+
+  defp update_("", key, update, acc) do
+    {acc <> key <> Genomu.Operation.apply(update, @nil_value), true}
+  end
+  defp update_(bin, key, update, acc) do
+    sz = byte_size(key)
+    case bin do
+      << ^key :: [binary, size(sz)], rest :: binary >> ->
+        {old_val, rest} = MsgPack.next(rest)
+        {acc <> key <> Genomu.Operation.apply(update, old_val) <> rest, false}
+      _ ->
+        {another_key, bin} = MsgPack.next(bin)
+        {val, bin} = MsgPack.next(bin)
+        update_(bin, key, update, acc <> another_key <> val)
+    end
+  end
+
   @args 0
   def keys(MsgPack.fix_map(rest: rest), _no_arg) do
     keys_(rest)

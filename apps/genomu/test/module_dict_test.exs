@@ -47,4 +47,16 @@ defmodule Genomu.Module.DictTest do
            Enum.sort([1, 2])
   end
 
+  test "update", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    dict = MsgPack.Map.from_list([{"ctr", 0}])
+    C.set(ch, ["key"], API.Core.identity(MsgPack.Map.from_list([{"ctr", 0}, {"dict", dict}])))
+    assert C.set(ch, ["key"], API.Dict.update("ctr", API.Number.incr)) ==
+           MsgPack.Map.from_list([{"ctr", 1},{"dict", dict}])
+    assert C.set(ch, ["key"], API.Dict.update("dict",API.Dict.update("ctr", API.Number.incr))) ==
+           MsgPack.Map.from_list([{"ctr", 1},{"dict",MsgPack.Map.from_list([{"ctr", 1}])}])
+  end
+
 end
