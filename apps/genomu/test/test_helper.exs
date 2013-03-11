@@ -45,6 +45,7 @@ defmodule Genomu.TestCase do
     File.mkdir_p(data_dir)
     :application.load(:riak_core)
     :application.set_env(:riak_core, :handoff_port, @handoff_port)
+    :application.set_env(:riak_core, :cluster_name, 'test')
     :application.set_env(:riak_core, :ring_state_dir, Path.join(data_dir, "ring") |> to_char_list)
     :application.load(:genomu)
     :application.set_env(:genomu, :http_port, @http_port)
