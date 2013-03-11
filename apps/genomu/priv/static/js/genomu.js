@@ -127,7 +127,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                                                                         {label: "Partition Response Time (Arithmetic Mean)", data: []},
                                                                         ], {
         series: { shadowSize: 1 },
-        lines: { show: true, lineWidth: 3, fill: true, fillColor: { colors: [ { opacity: 0.4 }, { opacity: 0.4 } ] }},
+        lines: { show: true, lineWidth: 3, fill: true, fillColor: { colors: [ { opacity: 0.4 }, { opacity: 0.4 } ] }},        
         yaxis: { show: true, min: 0, tickFormatter: function (v) { return v + " µs"; }},
         xaxis: { show: false, min: 0, max: 20 },
         colors: ["#FA5833"],
@@ -207,14 +207,13 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
       $scope.graphSystem = $.plot($("#metric-System"), [{label: "Available Memory", data: []},
                                                         {label: "Load Avg", data: []},
                                                         {label: "CPU Utilization", data: []},
-                                                        {label: "Processes", data: []},
                                                         ], {
-        series: { shadowSize: 1 },
-        lines: { show: true, lineWidth: 3, fill: true, fillColor: { colors: [ { opacity: 0.4 }, { opacity: 0.4 } ] }},
+        series: { shadowSize: 10 },
         yaxes: [{ position: 'left', show: true, min: 0, tickFormatter: function (v) { return v + " Mb"; }},
-                { position: 'left', show: true, min: 0, max: 100, tickFormatter: function (v) { return v.toFixed(2); }},
+                { position: 'left', show: true, min: 0, tickFormatter: function (v) { return v.toFixed(2); }},
                 { position: 'right', show: true, min: 0, max: 100},
-                { position: 'right', show: true, min: 0}],
+                { position: 'right', show: true, min: 0},
+                ],
         xaxis: { show: false, min: 0, max: 20 },
         colors: ["#FA5833"],
         legend: { position: "sw" },
@@ -248,6 +247,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                                                   filter(function(v) { return v != null }));
          opts.yaxes[1].max = Math.max.apply(this, $scope.metricLoadAvg.
                                                   filter(function(v) { return v != null }));
+
          opts.yaxes[3].max = Math.max.apply(this, $scope.metricProcesses.
                                                   filter(function(v) { return v != null }));
 
@@ -268,10 +268,10 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
            return [i + 1, v];
          });
 
-         $scope.graphSystem.setData([{label: "Available Memory", data: mdata},
-                                     {label: "Load Avg", data: ladata},
-                                     {label: "CPU Utilization", data: udata},
-                                     {label: "Processes", data: pdata},
+         $scope.graphSystem.setData([{label: "Available Memory", data: mdata, yaxis: 1},
+                                     {label: "Load Avg", data: ladata, yaxis: 2},
+                                     {label: "CPU Utilization", data: udata, yaxis: 3},
+                                     {label: "Processes", data: pdata, yaxis: 4},
                                     ]);
          $scope.graphSystem.setupGrid();
          $scope.graphSystem.draw();
