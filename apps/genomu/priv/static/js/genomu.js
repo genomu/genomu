@@ -128,7 +128,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                                                                         ], {
         series: { shadowSize: 1 },
         lines: { show: true, lineWidth: 3, fill: true, fillColor: { colors: [ { opacity: 0.4 }, { opacity: 0.4 } ] }},        
-        yaxis: { show: true, min: 0, tickFormatter: function (v) { return v + " µs"; }},
+        yaxis: { show: true, min: 0, max: 1000, tickFormatter: function (v) { return v + " µs"; }},
         xaxis: { show: false, min: 0, max: 20 },
         colors: ["#FA5833"],
         legend: { position: "sw" },
