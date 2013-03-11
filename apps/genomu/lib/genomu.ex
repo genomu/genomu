@@ -8,7 +8,7 @@ defmodule Genomu do
   @type timestamp :: non_neg_integer
 
   @type revision  :: binary
-  @type cell      :: {key, revision}
+  @type cell      :: {key, revision | nil}
 
   ## Internal types
   @type gen_server_ref  :: pid | atom | {atom, node} | {:global, atom} |
