@@ -25,4 +25,7 @@ defprotocol Genomu.Storage do
 
   @spec unpack(t, term) :: :ok
   def unpack(t, data)
+
+  @spec close(t) :: :ok
+  def close(t)
 end

@@ -42,7 +42,7 @@ defmodule Genomu.TestCase do
   def start_db do
     :net_kernel.start([:genomu_test, :shortnames])
     data_dir = Path.expand("../.test",__FILE__)
-    File.rm_rf(data_dir)    
+    File.rm_rf!(data_dir)    
     File.mkdir_p(data_dir)
     :application.load(:riak_core)
     :application.set_env(:riak_core, :handoff_port, @handoff_port)

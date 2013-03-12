@@ -1,5 +1,6 @@
 [ "basho_stats": {:git,"https://github.com/basho/basho_stats.git","08b37f5295b0b0275a6ee5ca446ff725005d1277",[]},
   "bear": {:git,"https://github.com/boundary/bear.git","b1882d7ee88e775d961a2678e4fafecef7f77705",[tag: "0.1.1"]},
+  "bitcask": {:git,"https://github.com/basho/bitcask.git","66d5cae48441ef8d5066ae4204790279bad7ab03",[]},
   "cowboy": {:git,"https://github.com/extend/cowboy.git","02ed254daa2df86ce8eff7f68b5f202ac9d31a7d",[]},
   "dnssd": {:git,"https://github.com/andrewtj/dnssd_erlang.git","9bf2a7b9ff598c4579de7f6c029916ed5d5a1193",[]},
   "exconfig": {:git,"https://github.com/yrashk/exconfig.git","9f02d06c3fba132839cff1f9a639fd63aa2155a3",[]},

@@ -15,6 +15,7 @@ defmodule Genomu.Mixfile do
   def application do
     [applications: [:exlager, :xup, :genx, :exmsgpack,
                     :compiler, :syntax_tools, ## riak_core
+                    :bitcask,
                     :jsx,
                     :cowboy, :ranch,
                     :hackney, :dnssd,
@@ -53,6 +54,7 @@ defmodule Genomu.Mixfile do
      {:hackney,       github: "benoitc/hackney"},
        {:mimetypes,   github: "spawngrid/mimetypes"},
      {:dnssd,         github: "andrewtj/dnssd_erlang"},
+     {:bitcask,       github: "basho/bitcask"},
     ] ++ deps(Mix.env)
   end
 

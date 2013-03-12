@@ -151,4 +151,9 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
     :ok
   end
 
+  def close(t) do
+    delete(t)
+    :ok
+  end
+
 end
