@@ -164,7 +164,7 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
   end
 
   def size(T[ref: ref]) do
-    B.fold(ref, fn(_, _, c) -> c + 1 end, 0) # TODO: count only staged objects
+    B.fold(ref, fn(_, _, c) -> c + 1 end, 0)
   end
 
   def reduce(T[ref: ref], acc0, f) do

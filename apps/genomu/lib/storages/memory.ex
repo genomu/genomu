@@ -130,8 +130,10 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
     unless ETS.info(commits) == :undefined, do: ETS.delete(commits)
   end
 
-  def size(T[commits: staging]) do
-    ETS.info(staging)[:size]
+  def size(T[staging: staging, log: log, commits: commits]) do
+    ETS.info(staging)[:size] +
+    ETS.info(log)[:size] +
+    ETS.info(commits)[:size]
   end
 
   def reduce(T[staging: staging, log: log, commits: commits], acc0, f) do
