@@ -13,7 +13,8 @@ defmodule Genomu.Mixfile do
   def version, do: Regex.replace(%r/[\n\r]/,File.read!(Path.expand("../../../VERSION", __FILE__)),"")
 
   def application do
-    [applications: [:exlager, :xup, :genx, :exmsgpack,
+    [applications: [:gproc,
+                    :exlager, :xup, :genx, :exmsgpack,
                     :compiler, :syntax_tools, ## riak_core
                     :bitcask,
                     :jsx,
@@ -55,12 +56,13 @@ defmodule Genomu.Mixfile do
        {:mimetypes,   github: "spawngrid/mimetypes"},
      {:dnssd,         github: "andrewtj/dnssd_erlang"},
      {:bitcask,       github: "basho/bitcask"},
+     {:gproc,         github: "uwiger/gproc"},
     ] ++ deps(Mix.env)
   end
 
   defp deps(:test) do
     [
-     {:genomu_client, github: "genomu/genomu-elixir"},
+     {:genomu_client, github: "genomu/genomu-elixir", branch: "watcher-api"},
     ]
   end
   defp deps(_), do: []

@@ -3,8 +3,8 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
   require Genomu.Constants.CommitObject
   alias Genomu.Constants.CommitObject, as: CO
   
-  defrecord State, entries: nil do
-    record_type entries: Dict.t
+  defrecord State, entries: nil, commit_object: nil, keys: [] do
+    record_type entries: Dict.t, commit_object: term, keys: [Genomu.key]
   end
 
   def init(_txn) do
@@ -33,7 +33,8 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
     quorum_template = Genomu.Coordinator.Quorum.new(n: n, r: r, vnodes: vnodes)
     Genomu.Coordinator.Quorum[] = quorum_template
     {quorums, entries} = get_quorums(log, quorum_template, txn, [], [])
-    {:ok, quorums, state.entries(entries)}
+    keys = Enum.uniq(Keyword.keys(log))
+    {:ok, quorums, state.entries(entries).keys(keys)}
   end
 
   def message(Genomu.Transaction[log: log] = txn, Genomu.Coordinator.Quorum[] = quorum, 
@@ -49,7 +50,7 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
                    {CO.log, MsgPack.Map.from_list(log)},
                  ] |> MsgPack.Map.from_list
     message = {:C, ITC.encode_binary(txn.clock), txn_object, entries, quorum.ref}
-    {:ok, message, state}
+    {:ok, message, state.commit_object(txn_object)}
   end
 
   def handle_response(Genomu.Transaction[], :ok, _partition, quorum, state) do
@@ -59,7 +60,12 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
     {:ok, quorum, state}
   end
 
-  def finalize(Genomu.Transaction[], State[] = state) do
+  def finalize(Genomu.Transaction[], State[keys: keys, commit_object: commit_object] = state) do
+    spawn(fn ->
+            lc key inlist keys do
+              :gproc_ps.publish(:l, {Genomu.Transaction, key}, commit_object)
+            end
+          end)
     {:reply, :ok, state}
   end
 

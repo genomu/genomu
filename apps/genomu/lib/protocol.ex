@@ -41,6 +41,12 @@ defmodule Genomu.Protocol do
     end
   end
 
+  def handle_cast({:subscription, channel, subscription, commit_object},
+                  State[socket: socket, transport: transport] = state) do
+    transport.send(socket, channel <> MsgPack.pack(subscription) <> MsgPack.pack(commit_object))
+    {:noreply, state}
+  end
+
   def handle_cast({channel, response}, State[channels: channels, transport: transport, socket: socket] = state) do
     t1 = Genomu.Utils.now_in_microseconds
     [{_, t}] = :ets.lookup(channels, {:t, channel})
@@ -56,14 +62,22 @@ defmodule Genomu.Protocol do
   @spec handle_packet(binary, State.t) :: {State.t, binary}
   defp handle_packet(data, State[channels: channels] = state) do
     {channel, rest} = MsgPack.next(data)
+    me = self
     case :ets.lookup(channels, channel) do
       [] ->
-        {:ok, ch} = Genomu.Channel.start
-        Process.link(ch)
-        {MsgPack.Map[map: options], rest} = MsgPack.unpack(rest)
-        :ets.insert(channels, [{channel, ch, options}, {ch, channel}])
+        case MsgPack.unpack(rest) do
+          {MsgPack.Map[map: options], rest} ->
+            {:ok, ch} = Genomu.Channel.start
+            Process.link(ch)
+            :ets.insert(channels, [{channel, ch, options}, {ch, channel}])
+          {subscriptions, rest} when is_list(subscriptions) ->
+            {:ok, ch} = Genomu.Watcher.start(fn(subscription, co) ->
+                                               :gen_server.cast(me, {:subscription, channel, subscription, co})
+                                             end, subscriptions)
+            Process.link(ch)
+            :ets.insert(channels, [{channel, ch, subscriptions}, {ch, channel}])
+        end
       [{_, ch, options}] ->
-        me = self
         {key, rest} = MsgPack.unpack(rest)
         :ets.insert(channels, {{:t, channel}, Genomu.Utils.now_in_microseconds})
         case key do
