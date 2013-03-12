@@ -59,10 +59,10 @@ defmodule Genomu.DNSSD do
     {:noreply, state}
   end
 
-  def handle_info({:dnssd, ref, {:resolve, {domain, port, txt}}},
+  def handle_info({:dnssd, ref, {:resolve, {_domain, _port, txt}}},
                   State[instances: instances] = state) do
     SD.stop(ref)
-    [{_, {description, service, _domain}}] = :ets.lookup(instances, ref)
+    [{_, {description, _service, _domain}}] = :ets.lookup(instances, ref)
     :ets.delete(instances, ref)
     if txt["cluster_name"] == Genomu.Cluster.name do
       :ets.insert(instances, {description, txt})
