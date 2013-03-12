@@ -44,38 +44,38 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
      end
      lookup_cell_txn(t, cell, page)
    end
-   defp lookup_cell_txn(T[log: log, staging: staging] = t, {key, rev} = cell, page) do
-     case ETS.lookup(log, {key, page}) do
-       [] ->
-         {@nil_value, "", ""}
-       [{_key, {_, {value, [{entry_clock, ^rev}|_]}}}] ->
-         {value, entry_clock, rev}
-       [{_key, {_, {value, [^rev|_]}}}] ->
-         {value, rev, rev}
-       [{_key, {value, {_, history}}}] ->
-         case Enum.find(history, fn(c) ->
-                                     case c do
-                                       {entry_clock, _} -> :ok
-                                       entry_clock -> :ok
-                                     end
-                                     entry_clock == rev or
-                                     ITC.decode(entry_clock) |>
-                                     ITC.le(ITC.decode(rev))
-                                 end) do
-           {entry_clock, txn_rev} ->
-             [{_, {value, _operation}}] = ETS.lookup(staging, {key, entry_clock})
-             {value, entry_clock, txn_rev}
-           txn_rev when is_binary(txn_rev) ->
-             {value, txn_rev, txn_rev}
-           nil ->
-             if page == 0 do
-               {@nil_value, "", ""}
-             else
-               lookup_cell_txn(t, cell, page - 1)
-             end
-         end
-     end
-   end
+  defp lookup_cell_txn(T[log: log, staging: staging] = t, {key, rev} = cell, page) do
+    case ETS.lookup(log, {key, page}) do
+      [] ->
+        {@nil_value, "", ""}
+      [{_key, {_, {value, [{entry_clock, ^rev}|_]}}}] ->
+        {value, entry_clock, rev}
+      [{_key, {_, {value, [^rev|_]}}}] ->
+        {value, rev, rev}
+      [{_key, {value, {_, history}}}] ->
+        case Enum.find(history, fn(c) ->
+                                    case c do
+                                      {entry_clock, _} -> :ok
+                                      entry_clock -> :ok
+                                    end
+                                    entry_clock == rev or
+                                    ITC.decode(entry_clock) |>
+                                    ITC.le(ITC.decode(rev))
+                                end) do
+          {entry_clock, txn_rev} ->
+            [{_, {value, _operation}}] = ETS.lookup(staging, {key, entry_clock})
+            {value, entry_clock, txn_rev}
+          txn_rev when is_binary(txn_rev) ->
+            {value, txn_rev, txn_rev}
+          nil ->
+            if page == 0 do
+              {@nil_value, "", ""}
+            else
+              lookup_cell_txn(t, cell, page - 1)
+            end
+        end
+    end
+  end
 
   def stage(T[staging: staging], cell, operation, value) do
      ETS.insert(staging, {cell, {value, operation}})
