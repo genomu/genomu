@@ -125,9 +125,9 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
   end
 
   def delete(T[staging: staging, log: log, commits: commits]) do
-    ETS.delete(staging)
-    ETS.delete(log)
-    ETS.delete(commits)
+    unless ETS.info(staging) == :undefined, do:  ETS.delete(staging)
+    unless ETS.info(log) == :undefined, do: ETS.delete(log)
+    unless ETS.info(commits) == :undefined, do: ETS.delete(commits)
   end
 
   def size(T[commits: staging]) do
@@ -142,7 +142,7 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
 
   def unpack(T[staging: staging, log: log, commits: commits], data) do
     tab =
-    case binary_to_term(data) do
+    case data do
       {{:s, key}, value} -> staging
       {{:c, key}, value} -> commits
       {key, value} -> log
