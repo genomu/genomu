@@ -20,7 +20,7 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
      {:ok, t.ref(ref)}
   end
 
-  def lookup(T[ref: ref] = t, {key, nil}) do
+  def lookup(T[ref: ref], {key, nil}) do
      case B.get(ref, @log_prefix <> Enum.join(key)) do
        :not_found -> page_bin = @zero_value
        {:ok, page_bin} -> :ok
@@ -29,12 +29,12 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
        {:ok, binary} ->
          {_page_ctr, binary} = MsgPack.unpack(binary)
          {value, binary} = MsgPack.next(binary)
+         {op, binary} = MsgPack.unpack(binary)
          {clock, _rest} = MsgPack.unpack(binary)
          case clock do
            [vsn, txn] -> :ok
            vsn when is_binary(vsn) -> txn = vsn
          end
-         {_, op, _, _} = lookup(t, {key, vsn})
          {value, op, vsn, txn}
        :not_found -> {@nil_value, "", "", ""}
      end
@@ -63,20 +63,19 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
       {:ok, binary} ->
         {_page_ctr, binary} = MsgPack.next(binary)
         {value, binary} = MsgPack.next(binary)
+        {op, binary} = MsgPack.unpack(binary)
         {clock, history} = MsgPack.unpack(binary)
         case clock do 
           [entry_clock, ^rev] ->
-            {_, op, _, _} = lookup(t, {key, entry_clock})
             {value, op, entry_clock, rev}
           ^rev ->
-            {_, op, _, _} = lookup(t, {key, rev})
             {value, op, rev, rev}
           _ ->
             case iterate_history(history, rev) do
               {entry_clock, txn_rev} ->
                 {:ok, binary} = B.get(ref, Enum.join(key) <> entry_clock)
                 {value, _binary} = MsgPack.next(binary)
-                {_, op, _, _} = lookup(t, {key, entry_clock})
+                {op, _binary} = MsgPack.unpack(binary)
                 {value, op, entry_clock, txn_rev}
               nil ->
                 if page == 0 do
@@ -114,26 +113,28 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
             :not_found -> history = <<>>; value = @nil_value ; page_ctr = 0
             {:ok, binary} ->
               {page_ctr, binary} = MsgPack.unpack(binary)
-              {value, history} = MsgPack.next(binary)
+              {value, binary} = MsgPack.next(binary)
+              {operation, history} = MsgPack.unpack(binary)
           end
         {:ok, page_bin} ->
           {page, _} = MsgPack.unpack(page_bin)
           {:ok, binary} = B.get(ref, @log_prefix <> Enum.join(key) <> MsgPack.pack(page))
           {page_ctr, binary} = MsgPack.unpack(binary)
-          {value, history} = MsgPack.next(binary)
+          {value, binary} = MsgPack.next(binary)
+          {operation, history} = MsgPack.unpack(binary)
       end
-      {value, updates} = recalculate(txn_log, key, value, [], ref)
+      {value, operation, updates} = recalculate(txn_log, key, operation, value, [], ref)
       lc {uk, uv} inlist updates do
         B.put(ref, uk, uv)
       end
       history_entry = history_entry(entry_clock, revision)
       if page_ctr <= @object_page_size do
         B.put(ref, @log_prefix <> Enum.join(key) <> MsgPack.pack(page), MsgPack.pack(page_ctr + 1) <>
-                   value <> history_entry <> history)
+                   value <> MsgPack.pack(operation) <> history_entry <> history)
       else
         # allocate a new page
         B.put(ref, @log_prefix <> Enum.join(key) <> MsgPack.pack(page + 1), MsgPack.pack(1) <>
-                   value <> history_entry)
+                   value <> MsgPack.pack(operation) <> history_entry)
         B.put(ref, @log_prefix <> Enum.join(key), MsgPack.pack(page + 1))
       end
     end
@@ -141,15 +142,15 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
   end
 
 
-  defp recalculate([], _, acc, updates, _ref), do: {acc, updates}
-  defp recalculate([{k, rev}|t], k, acc, updates, ref) do
+  defp recalculate([], _, operation, acc, updates, _ref), do: {acc, operation, updates}
+  defp recalculate([{k, rev}|t], k, _operation, acc, updates, ref) do
     {:ok, binary} = B.get(ref, Enum.join(k) <> rev)
     {_value, op} = MsgPack.next(binary)
     acc = Genomu.VNode.apply_operation(op, acc)
-    recalculate(t, k, acc, [{Enum.join(k) <> rev, acc <> op}|updates], ref)
+    recalculate(t, k, op, acc, [{Enum.join(k) <> rev, acc <> op}|updates], ref)
   end
-  defp recalculate([_|t], k, acc, updates, ref) do
-    recalculate(t, k, acc, updates, ref)
+  defp recalculate([_|t], k, operation, acc, updates, ref) do
+    recalculate(t, k, operation, acc, updates, ref)
   end
 
   @compile {:inline, [history_entry: 2]}
