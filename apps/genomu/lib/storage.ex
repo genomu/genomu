@@ -4,7 +4,7 @@ defprotocol Genomu.Storage do
   @spec init(t, term) :: {:ok, t} | {:error, reason :: term}
   def init(t, options)
 
-  @spec lookup(t, Genomu.cell) :: {value :: binary, version :: Genomu.revision, txn :: Genomu.revision}
+  @spec lookup(t, Genomu.cell) :: {value :: binary, op :: binary, version :: Genomu.revision, txn :: Genomu.revision}
   def lookup(t, cell)
 
   @spec stage(t, Genomu.cell, operation :: Genomu.Operation.serialized, value :: binary) :: :ok

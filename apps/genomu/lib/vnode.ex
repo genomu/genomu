@@ -56,7 +56,7 @@ defmodule Genomu.VNode do
 
    def handle_command({{key, _rev} = cell, new_rev, cmd, ref}, sender,
                       State[storage: s] = state) do
-     {value, rev, txn_ref} = S.lookup(s, cell)
+     {value, op, rev, txn_ref} = S.lookup(s, cell)
      case cmd do
        {:get, operation} ->
          case apply_operation(operation, value) do
@@ -66,6 +66,8 @@ defmodule Genomu.VNode do
              :ok
          end
          VNode.reply(sender, {:ok, ref, state.partition, {{new_value, rev}, txn_ref}})
+       {:operation, nil} ->
+         VNode.reply(sender, {:ok, ref, state.partition, {{MsgPack.pack(op), rev}, txn_ref}})
        {cmd_name, operation} ->
          case apply_operation(operation, value) do
            :error ->

@@ -242,10 +242,14 @@ defmodule Genomu.Channel do
 
   @spec next_clock(ITC.t, Genomu.command) :: ITC.t
   defp next_clock(clock, Genomu.Command[type: :get]), do: clock
+  defp next_clock(clock, Genomu.Command[type: :operation]), do: clock
   defp next_clock(clock, _), do: ITC.event(clock)
 
   @spec memoize(Genomu.key, Genomu.command, ITC.t, binary, State.t) :: State.t
   defp memoize(_key, Genomu.Command[type: :get], _clock, _rev, state) do
+    state
+  end
+  defp memoize(_key, Genomu.Command[type: :operation], _clock, _rev, state) do
     state
   end
   defp memoize(key, _cmd, clock, rev, State[] = state) do

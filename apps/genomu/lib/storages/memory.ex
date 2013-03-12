@@ -17,21 +17,25 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
      {:ok, t.update(staging: staging, log: log, commits: commits)}
   end
 
-  def lookup(T[log: log], {key, nil}) do
+  def lookup(T[log: log] = t, {key, nil}) do
      case ETS.lookup(log, key) do
        [] -> page = 0
        [{_, page}] -> :ok
      end
      case ETS.lookup(log, {key, page}) do
-       [{_, {_, {value, [{clock, txn_clock}|_history]}}}] -> {value, clock, txn_clock}
-       [{_, {_, {value, [clock|_history]}}}] -> {value, clock, clock}
-       _ -> {@nil_value, "", ""}
+       [{_, {_, {value, [{clock, txn_clock}|_history]}}}] ->
+         {_, op, _, _} = lookup(t, {key, clock})
+         {value, op, clock, txn_clock}
+       [{_, {_, {value, [clock|_history]}}}] ->
+         {_, op, _, _} = lookup(t, {key, clock})
+         {value, op, clock, clock}
+      _ -> {@nil_value, "", "", ""}
      end
   end
 
   def lookup(T[staging: staging] = t, {_key, rev} = cell) do
     case ETS.lookup(staging, cell) do
-      [{^cell, {value, _operation}}] -> {value, rev, rev}
+      [{^cell, {value, operation}}] -> {value, operation, rev, rev}
       [] ->
         lookup_cell_txn(t, cell)
     end
@@ -47,11 +51,13 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
   defp lookup_cell_txn(T[log: log, staging: staging] = t, {key, rev} = cell, page) do
     case ETS.lookup(log, {key, page}) do
       [] ->
-        {@nil_value, "", ""}
+        {@nil_value, "", "", ""}
       [{_key, {_, {value, [{entry_clock, ^rev}|_]}}}] ->
-        {value, entry_clock, rev}
+        {_, op, _, _} = lookup(t, {key, entry_clock})
+        {value, op, entry_clock, rev}
       [{_key, {_, {value, [^rev|_]}}}] ->
-        {value, rev, rev}
+        {_, op, _, _} = lookup(t, {key, rev})
+        {value, op, rev, rev}
       [{_key, {value, {_, history}}}] ->
         case Enum.find(history, fn(c) ->
                                     case c do
@@ -63,13 +69,14 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
                                     ITC.le(ITC.decode(rev))
                                 end) do
           {entry_clock, txn_rev} ->
-            [{_, {value, _operation}}] = ETS.lookup(staging, {key, entry_clock})
-            {value, entry_clock, txn_rev}
+            [{_, {value, op}}] = ETS.lookup(staging, {key, entry_clock})
+            {value, op, entry_clock, txn_rev}
           txn_rev when is_binary(txn_rev) ->
-            {value, txn_rev, txn_rev}
+            {_, op, _, _} = lookup(t, {key, txn_rev})
+            {value, op, txn_rev, txn_rev}
           nil ->
             if page == 0 do
-              {@nil_value, "", ""}
+              {@nil_value, "", "", ""}
             else
               lookup_cell_txn(t, cell, page - 1)
             end

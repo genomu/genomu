@@ -114,6 +114,7 @@ defmodule Genomu.Protocol do
   defp command(0, op), do: Genomu.Command.get(op)
   defp command(1, op), do: Genomu.Command.set(op)
   defp command(2, op), do: Genomu.Command.apply(op)
+  defp command(3, ""), do: Genomu.Command.get_operation
 
   defp set_command_options([], cmd), do: cmd
   defp set_command_options([{CO.n, n}|t], Genomu.Command[] = cmd) do

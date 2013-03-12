@@ -20,7 +20,7 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
      {:ok, t.ref(ref)}
   end
 
-  def lookup(T[ref: ref], {key, nil}) do
+  def lookup(T[ref: ref] = t, {key, nil}) do
      case B.get(ref, @log_prefix <> Enum.join(key)) do
        :not_found -> page_bin = @zero_value
        {:ok, page_bin} -> :ok
@@ -34,16 +34,17 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
            [vsn, txn] -> :ok
            vsn when is_binary(vsn) -> txn = vsn
          end
-         {value, vsn, txn}
-       :not_found -> {@nil_value, "", ""}
+         {_, op, _, _} = lookup(t, {key, vsn})
+         {value, op, vsn, txn}
+       :not_found -> {@nil_value, "", "", ""}
      end
   end
 
   def lookup(T[ref: ref] = t, {key, rev} = cell) do
     case B.get(ref, Enum.join(key) <> rev) do
       {:ok, binary} ->
-        {value, _rest} = MsgPack.next(binary)
-        {value, rev, rev}
+        {value, op} = MsgPack.next(binary)
+        {value, op, rev, rev}
       :not_found -> lookup_cell_txn(t, cell)
     end
   end
@@ -58,25 +59,28 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
   defp lookup_cell_txn(T[ref: ref] = t, {key, rev} = cell, page) do
     case B.get(ref, @log_prefix <> Enum.join(key) <> MsgPack.pack(page)) do
       :not_found ->
-        {@nil_value, "", ""}
+        {@nil_value, "", "", ""}
       {:ok, binary} ->
         {_page_ctr, binary} = MsgPack.next(binary)
         {value, binary} = MsgPack.next(binary)
         {clock, history} = MsgPack.unpack(binary)
         case clock do 
           [entry_clock, ^rev] ->
-            {value, entry_clock, rev}
+            {_, op, _, _} = lookup(t, {key, entry_clock})
+            {value, op, entry_clock, rev}
           ^rev ->
-            {value, rev, rev}
+            {_, op, _, _} = lookup(t, {key, rev})
+            {value, op, rev, rev}
           _ ->
             case iterate_history(history, rev) do
               {entry_clock, txn_rev} ->
                 {:ok, binary} = B.get(ref, Enum.join(key) <> entry_clock)
                 {value, _binary} = MsgPack.next(binary)
-                {value, entry_clock, txn_rev}
+                {_, op, _, _} = lookup(t, {key, entry_clock})
+                {value, op, entry_clock, txn_rev}
               nil ->
                 if page == 0 do
-                  {@nil_value, "", ""}
+                  {@nil_value, "", "", ""}
                 else
                   lookup_cell_txn(t, cell, page - 1)
                 end
