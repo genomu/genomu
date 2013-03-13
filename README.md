@@ -15,7 +15,10 @@ In order to build and fire up Genomu, you'll need a couple of things:
 To build, simply run `make`. Hopefully, this will end successfully and you
 can fire up a test cluster using `make start`. That will start three
 nodes (their configs can be found in the ./test directory). Make sure to
-check out its web console at http://localhost:9119
+check out its web console at http://localhost:9119, you'll see something like
+this:
+
+![Web console](http://genomu.com/screenshot.png)
 
 Basic examples
 ==============
