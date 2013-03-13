@@ -18,6 +18,9 @@ defmodule Genomu.HTTP.Page do
   def handle_path("/template/partitions", req, state) do
     page("Partitions", partitions_page([]), req, state)
   end
+  def handle_path("/template/explorer", req, state) do
+    page("Explorer", explorer_page([]), req, state)
+  end
   def handle_path(_, req, state) do
     {:ok, req} = :cowboy_req.reply(200, [{"content-type","text/html"}],
                                    page([]), req)
@@ -49,12 +52,16 @@ defmodule Genomu.HTTP.Page do
   EEx.function_from_file :defp, :partitions_page,
                          Path.expand("../templates/partitions.html.eex", __FILE__),
                          [:_assigns]
+  EEx.function_from_file :defp, :explorer_page,
+                         Path.expand("../templates/explorer.html.eex", __FILE__),
+                         [:_assigns]
 
   defp pages(active) do
     [
      {"Dashboard", "/#/", "bar-chart"},
      {"Instances", "/#/instances", "hdd"},
      {"Partitions", "/#/partitions", "cogs"},
+     {"Explorer", "/#/explorer", "eye-open"},
     ] |> Enum.map(fn({name, url, icon}) -> {name, url, icon, name == active} end)
   end
 end

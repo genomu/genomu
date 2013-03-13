@@ -19,7 +19,7 @@
   <link id="base-style" href="/css/genomu.css" rel="stylesheet">
   <link id="base-style-responsive" href="/css/style-responsive.css" rel="stylesheet">
   <link href='/css/font.css' rel='stylesheet' type='text/css'>
-  
+  <link rel="stylesheet" href="/css/codemirror.css"> 
   <!-- end: CSS -->
   
 
@@ -117,7 +117,11 @@
     </script>
 
     <script type="text/javascript" src="/js/underscore-min.js"></script>
-    
+
+    <script src="/js/codemirror.js"></script>
+
+    <script src="/js/mode/javascript/javascript.js"></script>
+
     <script type="text/javascript" src="/js/genomu.js">
     </script>
 

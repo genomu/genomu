@@ -1,0 +1,58 @@
+<div id="content" class="span11">
+
+
+<div class="row-fluid">
+        <div class="box span12">
+          <div class="box-header" data-original-title>
+            <h2><i class="halflings-icon edit"></i><span class="break"></span>Transaction</h2>
+          </div>
+          <div class="box-content">
+          <div class="row-fluid">
+            <textarea ui-codemirror="{lineNumbers: true, autofocus: true}" ng-model="genomuScript"></textarea>
+          </div>
+          <div class="row-fluid">
+            <div class="pull-right">
+              <button class="btn btn-success" ng-click="evalScript()">Run</button>
+            </div>          
+          </div>
+          </div>
+</div>
+
+<div class="row-fluid">
+        <div class="box span12">
+          <div class="box-header" data-original-title>
+            <h2><i class="halflings-icon edit"></i><span class="break"></span>Output</h2>
+          </div>
+          <div class="box-content">
+            <div class="row-fluid">
+              <div ng-repeat="item in genomuScriptTrace">
+                <div class="alert alert-success" ui-if="item.type == 'set'">
+                  <span class="label label-success">set</span> <strong>{{ item.key }}</strong> <span ng-bind="item.instance.inspect(item.operation)"></span> &rarr; <strong>{{ item.data.result }}</strong>
+                  <span ui-if="!_.isUndefined(item.data.error)">
+                     <span class="label label-important" ng-bind="item.data.error"></span>
+                  </span>                  
+                </div>
+                <div class="alert alert-info" ui-if="item.type == 'get'">
+                  <span class="label label-info">get</span> <strong>{{ item.key }}</strong> <span ng-bind="item.instance.inspect(item.operation)"></span> &rarr; <strong ui-if="item.data.result != null">{{ item.data.result }}</strong>
+                  <strong ui-if="item.data.result == null">null</strong>
+                  <span ui-if="!_.isUndefined(item.data.error)">
+                     <span class="label label-important" ng-bind="item.data.error"></span>
+                  </span>                  
+                </div>
+                <div class="alert alert-success" ui-if="item.type == 'apply'">
+                  <span class="label label-block">apply</span> <strong>{{ item.key }}</strong> <span ng-bind="item.instance.inspect(item.operation)"></span>
+                  <span ui-if="!_.isUndefined(item.data.error)">
+                     <span class="label label-important" ng-bind="item.data.error"></span>
+                  </span>
+                </div>
+                <div class="alert alert-warning" ui-if="item.type == 'commit'">
+                  <span class="label label-inverse">commit</span>
+                  <span ui-if="!_.isUndefined(item.data.error)">
+                     <span class="label label-important" ng-bind="item.data.error"></span>
+                  </span>                  
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+</div>

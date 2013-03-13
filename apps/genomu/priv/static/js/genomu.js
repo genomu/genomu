@@ -24,6 +24,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
                                           {commit: {method: 'POST'},
                                            discard: {method: 'DELETE'}});
     var ClusterDiscovery = $resource('/cluster/discovery');
+    var Operations = $resource('/operations');
 
     $scope.instance = Instance.get();
     $scope.cluster = Cluster.get();
@@ -31,6 +32,8 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
     $scope.clusterMembershipPlan = ClusterMembershipPlan.get();
     $scope.clusterDiscovery = ClusterDiscovery.get();
     $scope.metrics = Metrics.get();
+    $scope.operations = Operations.get();
+    $scope.genomuScriptTrace = [];
 
     $scope.ownership = function(instance) {
       return (instance.indices.length * 100 / $scope.cluster.num_partitions)
@@ -279,6 +282,138 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
       }, true);
     }
 
+    $scope.allOperations = function() {
+      var ops = [];
+      for (var mod in $scope.operations) {
+        for (var i in $scope.operations[mod].operations) {
+          var op = $scope.operations[mod].operations[i];
+          op.module = mod;
+          op.module_id = $scope.operations[mod].id;
+          ops.push(op);
+        }
+      }
+      return ops;
+    }
+
+    var Genomu = function() {
+      var api = function(arities, module_id) {
+        return function() {
+          var operation_id = arities[arguments.length];
+          var args = Array.prototype.slice.call(arguments);
+          var arg = args;
+          if (args.length == 0) {
+            arg = null;
+          } else if (args.length == 1) {
+            arg = args[0];
+          }
+          return {'_genomu': true, module: module_id, operation: operation_id, arity: args.length, argument: arg};
+        };
+      }
+      var modules = [];
+      this._modules = {};
+      for (var k in $scope.operations) {
+        if (typeof $scope.operations[k] == 'object')
+          modules.push($scope.operations[k]);
+      }
+      for (var i in modules) {
+        this[modules[i].name] = {};
+        this._modules[modules[i].id] = {};
+        var operations = modules[i].operations;
+        var me = this;
+        operations = operations.reduce(function(acc, op) {
+            acc[op.name] = acc[op.name] || {arities: {}};
+            acc[op.name].arities[op.args] = op.id;
+            me._modules[modules[i].id][[op.id, op.args]] = [modules[i].name, op.name];
+            return acc;
+        }, {});
+        for (var j in operations) {
+          this[modules[i].name][j] = api(operations[j].arities, modules[i].id);
+        }
+      }
+      this.set = function(key, operation, cb) {
+        actual_key = key;
+        if (_.isString(actual_key)) actual_key = [key];
+        if (!(typeof operation == 'object' && operation['_genomu'] == true)) {
+          operation = this.core.identity(operation);
+        }
+        var me = this;
+        $http.post("/operations/" + this.channel,
+                  {key: actual_key, command: 1, operation: operation}).
+        success(function(data, status) {
+          $scope.genomuScriptTrace.push({type: 'set', data: data, operation: operation, key: key, instance: me});
+          if (typeof cb == 'function') {
+            cb.apply(this, [data]);
+          }
+        });
+      };
+      this.apply = function(key, operation, cb) {
+        actual_key = key;
+        if (_.isString(actual_key)) actual_key = [key];
+        var me = this;
+        $http.post("/operations/" + this.channel,
+                  {key: actual_key, command: 2, operation: operation}).
+        success(function(data, status) {
+          $scope.genomuScriptTrace.push({type: 'apply', data: data, operation: operation, key: key, instance: me});
+          if (typeof cb == 'function') {
+            cb.apply(this, [data]);
+          }
+        });
+      };
+      this.commit = function(cb) {
+        var me = this;
+        $http.post("/operations/" + this.channel,
+                  {commit: true}).
+        success(function(data, status) {
+          $scope.genomuScriptTrace.push({type: 'commit', instance: me});
+          if (typeof cb == 'function') {
+            cb.apply(this, [data]);
+          }
+        });
+      };
+      this.get = function(key, operation, cb) {
+        if (typeof operation == 'function') cb = operation;
+        if (typeof operation == 'undefined') operation = this.core.identity(); 
+        actual_key = key;
+        if (_.isString(actual_key)) actual_key = [key];
+        var me = this;
+        $http.post("/operations/" + this.channel,
+                  {key: actual_key, command: 0, operation: operation}).
+        success(function(data, status) {
+          $scope.genomuScriptTrace.push({type: 'get', data: data, operation: operation, key: key, instance: me});
+          if (typeof cb == 'function') {
+            cb.apply(this, [data]);
+          }
+        });
+      };
+      this.inspect = function(value) {
+        if (typeof value == 'object' && value['_genomu'] == true) {
+          info = this._modules[value.module][[value.operation, value.arity]];
+          if (value.argument == null) {
+            return info[0] + "." + info[1] + "()";  
+          } else {
+            return info[0] + "." + info[1] + "(" + this.inspect(value.argument) + ")";
+          }      
+        } else {
+          return '' + value;
+        }
+      }
+
+    }
+
+    $scope.evalScript = function() {
+       var genomu = new Genomu();
+       $scope.genomuScriptTrace = [];
+       $http.post("/operations").
+         success(function(data, status) {
+            genomu.channel = data.channel 
+            try {
+              eval("(function() { " + $scope.genomuScript + "})()");
+            } catch(e) {
+              noty({layout: 'center', type: 'error', text: 'Evaluation error: ' + e})
+            }
+         });
+    }
+
     $scope.page = function() {
       return window.location.pathname + window.location.hash;
     }
@@ -307,5 +442,6 @@ app.config(function ($routeProvider) {
       when('/', { templateUrl: '/template/dashboard', controller: 'DashboardCtrl' }).
       when('/instances', { templateUrl: '/template/instances', controller: 'DashboardCtrl' }).
       when('/partitions', { templateUrl: '/template/partitions', controller: 'DashboardCtrl' }).
+      when('/explorer', { templateUrl: '/template/explorer', controller: 'DashboardCtrl' }).
       otherwise({redirectTo:'/'});
 });

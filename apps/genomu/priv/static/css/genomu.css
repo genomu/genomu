@@ -19,3 +19,8 @@ footer {
 #content-holder{
     padding-bottom: 24px;
 }
+
+.CodeMirror {
+    border: 1px solid grey;
+    margin-bottom: 20px;
+}
