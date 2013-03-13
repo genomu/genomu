@@ -24,7 +24,21 @@ defmodule Genomu.WatcherTest do
     C.execute conn, ch, do: C.set(ch, ["mykey"], API.Core.identity(1))
 
     assert_receive {^ref, ["mykey"], _}, 2_000
-    
+  end
+
+  test "notifications for multi-key transactions", context do
+    conn = context[:conn]
+
+    me = self
+    {:ok, _w, ref} = C.watch(conn, fn(ref, k, co) -> me <- {ref, k, co} end, [["mykey1"],["mykey2"]])
+
+    C.execute conn, ch do
+      C.set(ch, ["mykey1"], API.Core.identity(1))
+      C.set(ch, ["mykey2"], API.Core.identity(1))
+    end
+
+    assert_receive {^ref, ["mykey1"], _}, 2_000
+    assert_receive {^ref, ["mykey2"], _}, 2_000
   end
 
 end
