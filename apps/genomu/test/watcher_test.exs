@@ -37,8 +37,9 @@ defmodule Genomu.WatcherTest do
       C.set(ch, ["mykey2"], API.Core.identity(1))
     end
 
-    assert_receive {^ref, ["mykey1"], _}, 2_000
-    assert_receive {^ref, ["mykey2"], _}, 2_000
+    assert_receive {^ref, ["mykey1"], txn1}, 2_000
+    assert_receive {^ref, ["mykey2"], txn2}, 2_000
+    assert txn1 == txn2
   end
 
 end
