@@ -61,13 +61,20 @@ defmodule Genomu.Module do
 
   def __after_compile__(Macro.Env[] = env, _binary) do
     module = env.module
+    json = to_json(module) |> :jsx.to_json(indent: 2)
+    dir = Path.expand("../../priv/modules", __FILE__)
+    filename = Path.join(dir,"#{name(module)}.json")
+    File.mkdir_p(dir)
+    File.write(filename, json)
+  end
+
+  def to_json(module, version // Genomu.Mixfile.version) do
     case module.__info__(:moduledoc) do
       {_, module_doc} when is_binary(module_doc) -> :ok
       _ -> module_doc = :null
     end
-    json =
     [
-      system_version: Genomu.Mixfile.version,
+      system_version: version,
       id: id(module),
       name: name(module),
       doc: module_doc,
@@ -78,10 +85,6 @@ defmodule Genomu.Module do
           doc = doc || :null
           [id: attrs[:id], name: name, args: attrs[:args], doc: doc]
          end),
-    ] |> :jsx.to_json(indent: 2)
-    dir = Path.expand("../../priv/modules", __FILE__)
-    filename = Path.join(dir,"#{name(module)}.json")
-    File.mkdir_p(dir)
-    File.write(filename, json)
+    ]
   end
 end

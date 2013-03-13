@@ -9,6 +9,7 @@ defmodule Genomu.HTTP do
     dispatch = [
       {:_, [
         {"/", Genomu.HTTP.Page, []},
+        {"/operations/[...]", Genomu.HTTP.Operations, []},
         {"/metrics", Genomu.HTTP.Metrics, []},
         {"/template/[:page]", Genomu.HTTP.Page, []},
         {"/instance", Genomu.HTTP.Instance, []},

@@ -40,6 +40,8 @@ defmodule Genomu.Operation do
     Module.eval_quoted __MODULE__, (quote do: require unquote(module))
   end
 
+  def modules, do: @modules
+
   lc module inlist @modules, {operation, _attrs} inlist Genomu.Module.operations(module) do
     module_id = Genomu.Module.id(module)
     operation_id = Genomu.Module.operation(module, {:name, operation})[:id]
