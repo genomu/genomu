@@ -17,6 +17,10 @@ can fire up a test cluster using `make start`. That will start three
 nodes (their configs can be found in the ./test directory). Make sure to
 check out its web console at http://localhost:9119
 
+Basic examples
+==============
+
+Coming...
 
 License
 =======
