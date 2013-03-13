@@ -3,6 +3,24 @@ Genomu
 
 A concurrency-oriented K/V database
 
+Installation
+============
+
+In order to build and fire up Genomu, you'll need a couple of things:
+
+* Erlang R16B: http://erlang.org/
+* Elixir (latest master branch): https://github.com/elixir-lang/elixir
+* avahi daemon (only if you're on Linux, don't worry about it on OS X)
+
+To build, simply run `make`. Hopefully, this will end successfully and you
+can fire up a test cluster using `make start`. That will start three
+nodes (their configs can be found in the ./test directory). Make sure to
+check out it's web console at http://localhost:9119
+
+
+License
+=======
+
    Copyright 2012, 2013 Spawngrid, Inc.
 
    Licensed under the Apache License, Version 2.0 (the "License");
