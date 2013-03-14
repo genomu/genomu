@@ -238,7 +238,7 @@ app.controller('DashboardCtrl',function($scope, $resource, $routeParams, $http, 
          $scope.metricMemory.shift();
          $scope.metricLoadAvg.push(n.CPU.avg1 / 256);
          $scope.metricLoadAvg.shift();
-         $scope.metricUtil.push(n.CPU.utilization * 100);
+         $scope.metricUtil.push(n.CPU.utilization);
          $scope.metricUtil.shift();
          $scope.metricProcesses.push(n.Processes);
          $scope.metricProcesses.shift();
