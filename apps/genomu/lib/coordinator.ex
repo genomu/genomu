@@ -84,9 +84,8 @@ defmodule Genomu.Coordinator do
     hstate = Enum.reduce quorums, hstate, 
                          fn(quorum, hstate) ->
                            {:ok, message, hstate} = Proto.message(for, quorum, hstate)
-                           :riak_core_vnode_master.command(quorum.preflist, message, 
-                                                          {:fsm, :undefined, self},
-                                                          Genomu.VNode_master)
+                           Genomu.Quorum.command(quorum.preflist, message,
+                                                 {:fsm, :undefined, self})
                            hstate
                          end
     {:next_state, :waiting, state.sent_at(Genomu.Utils.now_in_microseconds).handler_state(hstate), 0}

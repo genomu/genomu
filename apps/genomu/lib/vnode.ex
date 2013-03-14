@@ -37,6 +37,7 @@ defmodule Genomu.VNode do
 
    @spec init([non_neg_integer]) :: {:ok, State.t}
    def init([partition]) do
+     spawn_link(fn -> Genomu.Quorum.start_link(partition) end)
      :erlang.process_flag(:trap_exit, true)
      {:ok, s} = Genomu.Storage.init(Application.environment(:genomu)[:storage], [partition: partition])
      {:ok, State.new(storage: s, partition: partition)}
