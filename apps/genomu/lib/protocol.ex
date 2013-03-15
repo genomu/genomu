@@ -94,7 +94,7 @@ defmodule Genomu.Protocol do
               end)
           _ ->
             case key do
-              MsgPack.Map[map: [{_, _} = addr]] -> :ok
+              MsgPack.Map[map: [{"vsn", [key, rev]}]] -> addr = {key, rev}
               addr -> :ok
             end
             {type, op} = MsgPack.unpack(rest)
