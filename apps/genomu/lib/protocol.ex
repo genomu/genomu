@@ -94,8 +94,8 @@ defmodule Genomu.Protocol do
               end)
           _ ->
             case key do
-              MsgPack.Map[map: [{0, [key, rev]}]] -> addr = {key, rev}
-              _ -> addr = key
+              MsgPack.Map[map: [{_, _} = addr]] -> :ok
+              addr -> :ok
             end
             {type, op} = MsgPack.unpack(rest)
             cmd = set_command_options(options, command(type, op))
