@@ -15,12 +15,12 @@ defmodule Genomu.Module.BooleanTest do
     stop_db
   end
 
-  test "equals?", context do
+  test "equals", context do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
     C.set(ch, "key", API.Core.identity("123"))
-    assert C.get(ch, "key", API.Boolean.equals?("123"))
+    assert C.get(ch, "key", API.Boolean.equals("123"))
   end
 
   test "not", context do

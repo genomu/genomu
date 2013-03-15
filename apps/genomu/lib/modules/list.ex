@@ -187,15 +187,15 @@ defmodule Genomu.Module.List do
   end
 
   @args 1
-  def any?(MsgPack.fix_array(rest: rest), op) do
+  def any(MsgPack.fix_array(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
     any_(rest, op)
   end
-  def any?(MsgPack.array16(rest: rest), op) do
+  def any(MsgPack.array16(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
     any_(rest, op)
   end
-  def any?(MsgPack.array32(rest: rest), op) do
+  def any(MsgPack.array32(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
     any_(rest, op)
   end
@@ -211,13 +211,13 @@ defmodule Genomu.Module.List do
   end
 
   @args 1
-  def member?(MsgPack.fix_array(rest: rest), v) do
+  def member(MsgPack.fix_array(rest: rest), v) do
     member_(rest, v)
   end
-  def member?(MsgPack.array16(rest: rest), v) do
+  def member(MsgPack.array16(rest: rest), v) do
     member_(rest, v)
   end
-  def member?(MsgPack.array32(rest: rest), v) do
+  def member(MsgPack.array32(rest: rest), v) do
     member_(rest, v)
   end
 
@@ -232,15 +232,15 @@ defmodule Genomu.Module.List do
   end
 
   @args 1
-  def all?(MsgPack.fix_array(rest: rest), op) do
+  def all(MsgPack.fix_array(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
     all_(rest, op)
   end
-  def all?(MsgPack.array16(rest: rest), op) do
+  def all(MsgPack.array16(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
     all_(rest, op)
   end
-  def all?(MsgPack.array32(rest: rest), op) do
+  def all(MsgPack.array32(rest: rest), op) do
     {op, ""} = MsgPack.unpack(op)
     all_(rest, op)
   end

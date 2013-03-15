@@ -5,8 +5,8 @@ defmodule Genomu.Module.Boolean do
   @false_value MsgPack.pack(false)
 
   @args 1
-  def equals?(value, value), do: @true_value
-  def equals?(_v1, _v2), do: @false_value
+  def equals(value, value), do: @true_value
+  def equals(_v1, _v2), do: @false_value
 
   @args 0
   @name :not

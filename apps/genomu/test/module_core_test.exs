@@ -19,29 +19,29 @@ defmodule Genomu.Module.CoreTest do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    assert C.get(ch, ["key"], API.Core.identity) == nil
-    assert C.set(ch, ["key"], API.Core.identity("123")) == "123"
-    assert C.get(ch, ["key"], API.Core.identity) == "123"
+    assert C.get(ch, "key", API.Core.identity) == nil
+    assert C.set(ch, "key", API.Core.identity("123")) == "123"
+    assert C.get(ch, "key", API.Core.identity) == "123"
   end
 
   test "compose", context do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    assert C.get(ch, ["key"], API.Core.compose(API.Core.identity, API.Core.identity("123"))) == "123"
+    assert C.get(ch, "key", API.Core.compose(API.Core.identity, API.Core.identity("123"))) == "123"
   end
 
   test "assert", context do
     conn = context[:conn]
 
-    C.execute conn, ch, do: C.set(ch, ["akey"], API.Core.identity("123"))
+    C.execute conn, ch, do: C.set(ch, "akey", API.Core.identity("123"))
    
     {:ok, ch} = C.begin(conn)
-    assert C.get(ch, ["akey"], API.Core.assert(API.Boolean.equals?("123"))) == "123"
+    assert C.get(ch, "akey", API.Core.assert(API.Boolean.equals("123"))) == "123"
     assert_raise Genomu.Client.AbortException, fn ->
-      C.get(ch, ["akey"], API.Core.assert(API.Boolean.equals?("321")))
+      C.get(ch, "akey", API.Core.assert(API.Boolean.equals("321")))
     end
-    assert C.get(ch, ["akey"], API.Core.assert(API.Boolean.equals?("123"))) == "123"
+    assert C.get(ch, "akey", API.Core.assert(API.Boolean.equals("123"))) == "123"
   end
 
   test "assert in a transaction replay", context do
@@ -50,8 +50,8 @@ defmodule Genomu.Module.CoreTest do
     {:ok, ch} = C.begin(conn)
     {:ok, ch1} = C.begin(conn)
 
-    C.apply(ch, "tkey", API.Core.assert(API.Boolean.equals?(nil)))
-    C.apply(ch1, "tkey", API.Core.assert(API.Boolean.equals?(nil)))
+    C.apply(ch, "tkey", API.Core.assert(API.Boolean.equals(nil)))
+    C.apply(ch1, "tkey", API.Core.assert(API.Boolean.equals(nil)))
 
     C.set(ch, "tkey", API.Core.identity("ch"))
     C.set(ch1, "tkey", API.Core.identity("ch1"))
@@ -73,7 +73,7 @@ defmodule Genomu.Module.CoreTest do
     C.set(ch, "lkey", API.Core.identity("ch"))
   
     assert_raise Genomu.Client.AbortException, fn ->
-      C.apply(ch, "lkey", API.Core.assert(API.Boolean.equals?(nil)))
+      C.apply(ch, "lkey", API.Core.assert(API.Boolean.equals(nil)))
     end
 
   end
