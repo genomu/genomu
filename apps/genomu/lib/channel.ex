@@ -45,6 +45,7 @@ defmodule Genomu.Channel do
                    clock: nil, crash_clock: nil, crash_clock_file: nil,
                    outstanding: [],
                    snapshot: nil, log: [],
+                   modified: false,
                    children: nil do
 
     record_type root: atom | boolean, parent: nil | Genomu.gen_server_ref,
@@ -52,6 +53,7 @@ defmodule Genomu.Channel do
                 crash_clock_file: term,
                 outstanding: [ITC.t],
                 snapshot: nil | :ets.tid, log: [Genomu.Transaction.entry],
+                modified: true,
                 children: nil | :ets.tid
 
     @spec initialize(t) :: t
@@ -189,16 +191,20 @@ defmodule Genomu.Channel do
 
   @spec execute(pid, Genomu.key | Genomu.cell, Genomu.command, Keyword.t) :: term
   defcall execute(key, cmd, options), state: State[] = state do
-    state = ensure_snapshot(state)
-    clock = next_clock(state.clock, cmd)
-    cell = get_cell(key, state)
-    revision = ITC.encode_binary(clock)
-    cmd = cmd.update(cell: cell, new_revision: revision)
-    coord_options = [for: cmd] |>
-                    Keyword.merge(options)
-    result = Genomu.Coordinator.run(coord_options)
-    state = memoize(key, cmd, clock, revision, state)
-    {:reply, result, state}
+    if cmd.assertion? and state.modified do
+      {:reply, :abort, state}
+    else
+      state = ensure_snapshot(state)
+      clock = next_clock(state.clock, cmd)
+      cell = get_cell(key, state)
+      revision = ITC.encode_binary(clock)
+      cmd = cmd.update(cell: cell, new_revision: revision)
+      coord_options = [for: cmd] |>
+                      Keyword.merge(options)
+      result = Genomu.Coordinator.run(coord_options)
+      state = memoize(key, cmd, clock, revision, state)
+      {:reply, result, state.modified((not cmd.assertion?) and cmd.type in [:set, :apply])}
+    end
   end
 
   @spec commit(Genomu.gen_server_ref, Genomu.Transaction.t) :: :ok | {:error, reason :: term}
@@ -210,10 +216,10 @@ defmodule Genomu.Channel do
       _ ->
         clock = sync(parent, clock)
         txn = txn.update(clock: clock, log: Enum.reverse(log))
-        Genomu.Coordinator.run(for: txn)
+        result = Genomu.Coordinator.run(for: txn)
         update(parent, self, clock)
         stop(self)
-        {:reply, :ok, state.clock(clock)}
+        {:reply, result, state.clock(clock)}
     end
   end
 

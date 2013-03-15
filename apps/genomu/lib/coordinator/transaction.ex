@@ -3,8 +3,8 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
   require Genomu.Constants.CommitObject
   alias Genomu.Constants.CommitObject, as: CO
   
-  defrecord State, entries: nil, commit_object: nil, keys: [] do
-    record_type entries: Dict.t, commit_object: term, keys: [Genomu.key]
+  defrecord State, entries: nil, commit_object: nil, keys: [], abort: false do
+    record_type entries: Dict.t, commit_object: term, keys: [Genomu.key], abort: boolean
   end
 
   def init(_txn) do
@@ -53,20 +53,24 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
     {:ok, message, state.commit_object(txn_object)}
   end
 
-  def handle_response(Genomu.Transaction[], :ok, _partition, quorum, state) do
+  def handle_response(Genomu.Transaction[], :ok, _partition, quorum, State[] = state) do
     {:ok, quorum, state}
   end
-  def handle_response(Genomu.Transaction[], _other, _partition, quorum, state) do
-    {:ok, quorum, state}
+  def handle_response(Genomu.Transaction[], :abort, _partition, quorum, State[] = state) do
+    {:ok, quorum, state.abort(true)}
   end
 
-  def finalize(Genomu.Transaction[], State[keys: keys, commit_object: commit_object] = state) do
+  def finalize(Genomu.Transaction[], State[keys: keys, commit_object: commit_object, abort: false] = state) do
     spawn(fn ->
             lc key inlist keys do
               :gproc_ps.publish(:l, {Genomu.Transaction, key}, commit_object)
             end
           end)
     {:reply, :ok, state}
+  end
+
+  def finalize(Genomu.Transaction[], State[abort: true] = state) do
+    {:reply, :abort, state}
   end
 
 

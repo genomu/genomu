@@ -105,7 +105,8 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
   end
 
   def commit(T[ref: ref], revision, entries, txn_log, commit_object) do
-    lc {key, entry_clock} inlist entries do
+    insertions =
+    Enum.reduce(entries, [], fn({key, entry_clock}, i) ->
       case B.get(ref, @log_prefix <> Enum.join(key)) do
         :not_found -> 
           page = 0
@@ -124,19 +125,20 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
           {operation, history} = MsgPack.unpack(binary)
       end
       {value, operation, updates} = recalculate(txn_log, key, operation, value, [], ref)
-      lc {uk, uv} inlist updates do
-        B.put(ref, uk, uv)
-      end
       history_entry = history_entry(entry_clock, revision)
       if page_ctr <= @object_page_size do
-        B.put(ref, @log_prefix <> Enum.join(key) <> MsgPack.pack(page), MsgPack.pack(page_ctr + 1) <>
-                   value <> MsgPack.pack(operation) <> history_entry <> history)
+        [{@log_prefix <> Enum.join(key) <> MsgPack.pack(page),
+          MsgPack.pack(page_ctr + 1) <>
+          value <> MsgPack.pack(operation) <> history_entry <> history}|updates] ++ i
       else
         # allocate a new page
-        B.put(ref, @log_prefix <> Enum.join(key) <> MsgPack.pack(page + 1), MsgPack.pack(1) <>
-                   value <> MsgPack.pack(operation) <> history_entry)
-        B.put(ref, @log_prefix <> Enum.join(key), MsgPack.pack(page + 1))
+         [{@log_prefix <> Enum.join(key) <> MsgPack.pack(page + 1), MsgPack.pack(1) <>
+                   value <> MsgPack.pack(operation) <> history_entry},
+          {@log_prefix <> Enum.join(key), MsgPack.pack(page + 1)}|updates] ++ i
       end
+    end)
+    lc {ik, iv} inlist insertions do
+        B.put(ref, ik, iv)
     end
     B.put(ref, @commit_prefix <> revision, commit_object)
   end
@@ -146,8 +148,14 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
   defp recalculate([{k, rev}|t], k, _operation, acc, updates, ref) do
     {:ok, binary} = B.get(ref, Enum.join(k) <> rev)
     {_value, op} = MsgPack.next(binary)
-    acc = Genomu.VNode.apply_operation(op, acc)
-    recalculate(t, k, op, acc, [{Enum.join(k) <> rev, acc <> op}|updates], ref)
+    case Genomu.VNode.apply_operation(op, acc) do
+      {:error, exception} ->
+        raise Genomu.VNode.AbortCommitException, exception: exception
+      Genomu.Operation.AbortException[] = e ->
+        raise Genomu.VNode.AbortCommitException, exception: e
+      acc ->
+        recalculate(t, k, op, acc, [{Enum.join(k) <> rev, acc <> op}|updates], ref)
+    end
   end
   defp recalculate([_|t], k, operation, acc, updates, ref) do
     recalculate(t, k, operation, acc, updates, ref)

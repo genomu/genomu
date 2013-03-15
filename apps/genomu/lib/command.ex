@@ -34,4 +34,13 @@ defrecord Genomu.Command, n: 3, r: 2, vnodes: :any,
   end
   def get_operation, do: new(type: :operation)
 
+  core_module = binary_to_list(MsgPack.pack(Genomu.Module.id(Genomu.Module.Core)))
+  assert_op = binary_to_list(MsgPack.pack(Genomu.Module.operation(Genomu.Module.Core, {:name, :assert})[:id]))
+
+  @spec assertion?(t) :: boolean
+  def assertion?(__MODULE__[operation: << unquote_splicing(core_module), unquote_splicing(assert_op), _ :: binary >>]) do
+    true
+  end
+  def assertion?(__MODULE__[]), do: false
+
 end

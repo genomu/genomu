@@ -1,6 +1,8 @@
 defmodule Genomu.Module.Core do
   use Genomu.Module, id: 0, name: :core
 
+  @false_value MsgPack.pack(false)
+
   @args 0
   def identity(value, _no_arg) do
     value
@@ -19,6 +21,15 @@ defmodule Genomu.Module.Core do
     {op2, ""} = Genomu.Operation.next(bin2)
     value = Genomu.Operation.apply(op2, value)
     Genomu.Operation.apply(op1, value)
+  end
+
+  @args 1
+  def assert(value, op) do
+    {op, ""} = MsgPack.unpack(op)
+    if Genomu.Operation.apply(op, value) == @false_value do
+      raise Genomu.Operation.AbortException
+    end
+    value
   end
 
 end

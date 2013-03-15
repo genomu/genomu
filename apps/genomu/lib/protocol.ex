@@ -112,7 +112,10 @@ defmodule Genomu.Protocol do
     @true_value
   end
   defp handle_response(:timeout) do
-    @nil_value
+    @nil_value <> MsgPack.pack(1)
+  end
+  defp handle_response(:abort) do
+    @nil_value <> MsgPack.pack(0)
   end
   defp handle_response({{value, clock}, txn}) do
     value <> MsgPack.pack(clock) <> MsgPack.pack(txn)

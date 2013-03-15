@@ -4,6 +4,8 @@ defmodule Genomu.Operation do
   @type  t              :: {module, operation, argument}
   @type  serialized     :: MsgPack.packed
 
+  defexception AbortException, message: "operation abort"
+
   @spec next(binary) :: {binary, binary}
   def next(binary) do
     {module_id, binary} = MsgPack.next(binary)

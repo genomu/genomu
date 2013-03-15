@@ -19,6 +19,8 @@ defmodule Genomu.VNode do
 
    @nil_value MsgPack.pack(nil)
 
+   defexception AbortCommitException, message: "commit abortion"
+
    require Lager
    require Genomu.Constants.CommitObject
    alias Genomu.Constants.CommitObject, as: CO
@@ -61,27 +63,38 @@ defmodule Genomu.VNode do
      case cmd do
        {:get, operation} ->
          case apply_operation(operation, value) do
-           :error ->
+           Genomu.Operation.AbortException[] ->
+             value = :abort
+           {:error, _exception} ->
              new_value = @nil_value
+             value = {{new_value, rev}, txn_ref}
            new_value ->
-             :ok
+             value = {{new_value, rev}, txn_ref}
          end
-         VNode.reply(sender, {:ok, ref, state.partition, {{new_value, rev}, txn_ref}})
+         VNode.reply(sender, {:ok, ref, state.partition, value})
        {:operation, nil} ->
          VNode.reply(sender, {:ok, ref, state.partition, {{MsgPack.pack(op), rev}, txn_ref}})
        {cmd_name, operation} ->
          case apply_operation(operation, value) do
-           :error ->
+           Genomu.Operation.AbortException[] ->
+             value = :abort
+           {:error, _exception} ->
              new_rev = rev
              new_value = @nil_value
+             value = {{new_value, new_rev}, txn_ref}
            new_value ->
-            S.stage(s, {key, new_rev}, operation, new_value)
+             value = {{new_value, new_rev}, txn_ref}
+             S.stage(s, {key, new_rev}, operation, new_value)
          end
          case cmd_name do
            :apply ->
-             VNode.reply(sender, {:ok, ref, state.partition, :ok})
+             if value == :abort do
+               VNode.reply(sender, {:ok, ref, state.partition, :abort})
+             else
+               VNode.reply(sender, {:ok, ref, state.partition, :ok})
+             end
            :set ->
-             VNode.reply(sender, {:ok, ref, state.partition, {{new_value, new_rev}, txn_ref}})
+             VNode.reply(sender, {:ok, ref, state.partition, value})
          end
      end
      {:noreply, state}
@@ -91,8 +104,12 @@ defmodule Genomu.VNode do
                       State[storage: s] = state) do
      MsgPack.Map[map: commit_object_dict] = commit_object
      MsgPack.Map[map: log] = commit_object_dict[CO.log]
-     S.commit(s, revision, entries, log, MsgPack.pack(commit_object))
-     {:reply, {:ok, ref, state.partition, :ok}, state}
+     try do
+       S.commit(s, revision, entries, log, MsgPack.pack(commit_object))
+       {:reply, {:ok, ref, state.partition, :ok}, state}
+     rescue AbortCommitException[] ->
+       {:reply, {:ok, ref, state.partition, :abort}, state}
+     end
    end
 
    @spec handle_handoff_command(term, sender, State.t) ::
@@ -151,9 +168,12 @@ defmodule Genomu.VNode do
    def apply_operation(operation, value) do
      try do
        Genomu.Operation.apply(operation, value)
-     catch type, msg -> 
-       Lager.error "Error #{inspect {type, msg}} occurred while processing operation #{inspect operation} on #{inspect value}"
-       :error
+     rescue
+       Genomu.Operation.AbortException[] = abort ->
+         abort
+       exception ->
+         Lager.error "Error #{inspect exception} occurred while processing operation #{inspect Genomu.Operation.deserialize(operation)} on #{inspect MsgPack.unpack(value)}"
+         {:error, exception}
      end
    end
 

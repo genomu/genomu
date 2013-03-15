@@ -85,7 +85,8 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
   end
 
   def commit(T[staging: staging, log: log, commits: commits], revision, entries, txn_log, commit_object) do
-    lc {key, entry_clock} inlist entries do
+    {insertions, updates} =
+    Enum.reduce(entries, {[], []}, fn({key, entry_clock}, {i, u}) ->
       case ETS.lookup(log, key) do
         [] -> 
           page = 0
@@ -97,16 +98,18 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
           [{_, {page_ctr, {{value, operation}, history}}}] = ETS.lookup(log, {key, page})
       end
       {value, operation, updates} = recalculate(txn_log, key, operation, value, [], staging)
-      ETS.insert(staging, updates)
       history_entry = history_entry(entry_clock, revision)
       if page_ctr <= @object_page_size do
-        ETS.insert(log, {{key, page}, {page_ctr + 1, {{value, operation}, [history_entry|history]}}})
+        {[{{key, page}, {page_ctr + 1, {{value, operation}, [history_entry|history]}}}|i],
+         updates ++ u}
       else
         # allocate a new page
-        ETS.insert(log, [{key, page + 1},
-                         {{key, page + 1}, {1, {{value, operation}, [history_entry]}}}])
+        {[{key, page + 1},
+         {{key, page + 1}, {1, {{value, operation}, [history_entry]}}}|i], updates ++ u}
       end
-    end
+    end)
+    ETS.insert(log, insertions)
+    ETS.insert(staging, updates)
     ETS.insert(commits, {{:C, revision}, {commit_object, [revision]}})
   end
 
@@ -114,7 +117,13 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
   defp recalculate([], _, operation, acc, updates, _staging), do: {acc, operation, updates}
   defp recalculate([{k, _} = cell|t], k, _operation, acc, updates, staging) do
     [{_, {_, op}}] = ETS.lookup(staging, cell)
-    acc = Genomu.VNode.apply_operation(op, acc)
+    case Genomu.VNode.apply_operation(op, acc) do
+      {:error, exception} ->
+        raise Genomu.VNode.AbortCommitException, exception: exception
+      Genomu.Operation.AbortException[] = e ->
+        raise Genomu.VNode.AbortCommitException, exception: e
+      acc -> :ok
+    end
     recalculate(t, k, op, acc, [{cell, {acc, op}}|updates], staging)
   end
   defp recalculate([_|t], k, operation, acc, updates, staging) do
