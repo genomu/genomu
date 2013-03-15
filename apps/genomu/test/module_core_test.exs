@@ -78,4 +78,103 @@ defmodule Genomu.Module.CoreTest do
 
   end
 
+  test "retrieving an operation at an inexisting address", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    assert C.get(ch, "noop", API.Core.operation) == nil
+  end
+
+  defp encode_op(MsgPack.Map[map: map]) do
+    MsgPack.pack(map["module"]) <> MsgPack.pack(map["operation"]) <> MsgPack.pack(map["argument"])
+  end
+
+  test "retrieving an operation that was committed by another channel", context do
+    conn = context[:conn]
+
+    op = API.Core.identity("123")
+
+    {:ok, ch} = C.begin(conn)
+    assert C.set(ch, "someop", op) == "123"
+    C.commit(ch)
+
+    {:ok, ch} = C.begin(conn)
+    assert encode_op(C.get(ch, "someop", API.Core.operation)) == op
+  end
+
+  test "retrieving an operation that was set by the same channel", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    assert C.set(ch, "anotherop", API.Core.identity("123")) == "123"
+    C.commit(ch)
+
+    {:ok, ch} = C.begin(conn)
+    op = API.Core.identity("321")
+    assert C.set(ch, "anotherop", op) == "321"
+    assert encode_op(C.get(ch, "anotherop", API.Core.operation)) == op
+  end
+
+  test "retrieving operation from concurrently committing channels", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    {:ok, ch1} = C.begin(conn)
+
+    op = API.Number.incr
+    C.set(ch, "opctr", op)
+    C.set(ch, "opctr", op)
+    C.set(ch1, "opctr", op)
+
+    C.commit(ch1)
+    C.commit(ch)
+
+    {:ok, ch} = C.begin(conn)
+    assert encode_op(C.get(ch, "opctr", API.Core.operation)) == op
+  end
+
+  test "retrieving an operation at a specified version", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    op = API.Core.identity("123")
+    {"123", vsn} = C.set(ch, "someop1", op, vsn: true)
+    C.commit(ch)
+
+    {:ok, ch} = C.begin(conn)
+    {result, vsn1} = C.get(ch, {"someop1", vsn}, API.Core.operation, vsn: true)
+    assert encode_op(result) == op
+    assert vsn1 == vsn
+  end
+
+  test "retrieving an operation at a specified upper bound version", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    op = API.Core.identity("123")
+    {"123", vsn0} = C.set(ch, "someop1x", op, vsn: true)
+    {"123", vsn} = C.set(ch, "someop2x", op, vsn: true)
+    C.commit(ch)
+
+    {:ok, ch} = C.begin(conn)
+    {result, vsn1, txn1} = C.get(ch, {"someop1x", vsn}, API.Core.operation, vsn: true, txn: true)
+    assert encode_op(result) == op
+    assert vsn1 == vsn0
+    assert txn1 == vsn
+  end
+
+  test "retrieving version for an inexisting object", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    assert C.get(ch, "something", API.Core.version) == ""
+  end
+
+  test "retrieving version for an existing object", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn)
+    {"123", vsn} = C.set(ch, "something", API.Core.identity("123"), vsn: true)
+    assert C.get(ch, "something", API.Core.version) == vsn
+  end
 end

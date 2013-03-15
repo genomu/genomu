@@ -97,7 +97,12 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
         [{_, page}] ->
           [{_, {page_ctr, {{value, operation}, history}}}] = ETS.lookup(log, {key, page})
       end
-      {value, operation, updates} = recalculate(txn_log, key, operation, value, [], staging)
+      case history do
+        [{prev_version, _}|_] -> :ok
+        [prev_version|_] -> :ok
+        [] -> prev_version = ""
+      end
+      {value, operation, updates} = recalculate(txn_log, prev_version, key, operation, value, [], staging)
       history_entry = history_entry(entry_clock, revision)
       if page_ctr <= @object_page_size do
         {[{{key, page}, {page_ctr + 1, {{value, operation}, [history_entry|history]}}}|i],
@@ -114,20 +119,20 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
   end
 
 
-  defp recalculate([], _, operation, acc, updates, _staging), do: {acc, operation, updates}
-  defp recalculate([{k, _} = cell|t], k, _operation, acc, updates, staging) do
+  defp recalculate([], _, _, operation, acc, updates, _staging), do: {acc, operation, updates}
+  defp recalculate([{k, ver} = cell|t], prev_version, k, operation, acc, updates, staging) do
     [{_, {_, op}}] = ETS.lookup(staging, cell)
-    case Genomu.VNode.apply_operation(op, acc) do
+    case Genomu.VNode.apply_operation(op, acc, [operation: operation, version: prev_version]) do
       {:error, exception} ->
         raise Genomu.VNode.AbortCommitException, exception: exception
       Genomu.Operation.AbortException[] = e ->
         raise Genomu.VNode.AbortCommitException, exception: e
       acc -> :ok
     end
-    recalculate(t, k, op, acc, [{cell, {acc, op}}|updates], staging)
+    recalculate(t, ver, k, op, acc, [{cell, {acc, op}}|updates], staging)
   end
-  defp recalculate([_|t], k, operation, acc, updates, staging) do
-    recalculate(t, k, operation, acc, updates, staging)
+  defp recalculate([_|t], prev_ver, k, operation, acc, updates, staging) do
+    recalculate(t, prev_ver, k, operation, acc, updates, staging)
   end
 
   @compile {:inline, [history_entry: 2]}

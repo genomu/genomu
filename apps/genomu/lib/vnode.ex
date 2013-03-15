@@ -62,7 +62,7 @@ defmodule Genomu.VNode do
      {value, op, rev, txn_ref} = S.lookup(s, cell)
      case cmd do
        {:get, operation} ->
-         case apply_operation(operation, value) do
+         case apply_operation(operation, value, [operation: op, version: rev]) do
            Genomu.Operation.AbortException[] ->
              value = :abort
            {:error, _exception} ->
@@ -72,10 +72,8 @@ defmodule Genomu.VNode do
              value = {{new_value, rev}, txn_ref}
          end
          VNode.reply(sender, {:ok, ref, state.partition, value})
-       {:operation, nil} ->
-         VNode.reply(sender, {:ok, ref, state.partition, {{MsgPack.pack(op), rev}, txn_ref}})
        {cmd_name, operation} ->
-         case apply_operation(operation, value) do
+         case apply_operation(operation, value, [operation: op, version: rev]) do
            Genomu.Operation.AbortException[] ->
              value = :abort
            {:error, _exception} ->
@@ -165,9 +163,9 @@ defmodule Genomu.VNode do
      S.close(s)
    end
 
-   def apply_operation(operation, value) do
+   def apply_operation(operation, value, opts) do
      try do
-       Genomu.Operation.apply(operation, value)
+       Genomu.Operation.apply(operation, value, opts)
      rescue
        Genomu.Operation.AbortException[] = abort ->
          abort

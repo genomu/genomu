@@ -38,7 +38,7 @@ defmodule Genomu.Module do
     lc {:operation, [{{:name, op}, attrs}]} inlist module.__info__(:attributes), do: {op, attrs}
   end
 
-  def __on_definition__(env, :def, name, [_, _], _guards, _body) do
+  def __on_definition__(env, :def, name, [_, _, _], _guards, _body) do
     module = env.module
     last_operation = Module.get_attribute(module, :last_operation)
     operation_id = Module.get_attribute(module, :id)
@@ -81,7 +81,7 @@ defmodule Genomu.Module do
       operations:
         (lc {_, attrs} inlist operations(module) do
           name = attrs[:public_name] |> to_binary
-          {_, _, _, _, doc} = List.keyfind(module.__info__(:docs), {attrs[:name], 2}, 0)
+          {_, _, _, _, doc} = List.keyfind(module.__info__(:docs), {attrs[:name], 3}, 0)
           doc = doc || :null
           [id: attrs[:id], name: name, args: attrs[:args], doc: doc]
          end),

@@ -8,13 +8,13 @@ defmodule Genomu.Module.Binary do
   Append a binary
   """
   @args 1
-  def append(value, arg) do
+  def append(value, arg, _opts) do
     MsgPack.pack(extract_bin(value) <> extract_bin(arg))
   end
 
   @args 3
   @name :range
-  def range_unit(value, MsgPack.fix_array(len: 3, rest: rest)) do
+  def range_unit(value, MsgPack.fix_array(len: 3, rest: rest), _opts) do
     {unit_size, rest} = MsgPack.unpack(rest)
     {start_pos, rest} = MsgPack.unpack(rest)
     {end_pos, ""} = MsgPack.next(rest)
@@ -22,7 +22,7 @@ defmodule Genomu.Module.Binary do
   end
 
   @args 2
-  def range(value, MsgPack.fix_array(len: 2, rest: rest)) do
+  def range(value, MsgPack.fix_array(len: 2, rest: rest), _opts) do
     {start_pos, rest} = MsgPack.unpack(rest)
     {end_pos, ""} = MsgPack.next(rest)
     MsgPack.pack(range_1(8, value, start_pos, end_pos))
@@ -55,16 +55,16 @@ defmodule Genomu.Module.Binary do
   end
 
   @args 0
-  def size(MsgPack.fix_raw(len: len), _) do
+  def size(MsgPack.fix_raw(len: len), _, _opts) do
     MsgPack.pack(len)
   end
-  def size(MsgPack.raw16(len: len), _) do
+  def size(MsgPack.raw16(len: len), _, _opts) do
     MsgPack.pack(len)
   end
-  def size(MsgPack.raw32(len: len), _) do
+  def size(MsgPack.raw32(len: len), _, _opts) do
     MsgPack.pack(len)
   end
-  def size(MsgPack.atom_nil, _) do
+  def size(MsgPack.atom_nil, _, _opts) do
     MsgPack.pack(0)
   end
 

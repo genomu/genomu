@@ -45,12 +45,15 @@ defmodule Genomu.Operation do
     end
   end
 
+  import Kernel, except: [apply: 3]
+  def apply(binary, value), do: apply(binary, value, [])
+
   lc module inlist @modules, {operation, _attrs} inlist Genomu.Module.operations(module) do
     module_id = Genomu.Module.id(module)
     operation_id = Genomu.Module.operation(module, {:name, operation})[:id]
     binary = binary_to_list(MsgPack.pack(module_id) <> MsgPack.pack(operation_id))
-    def apply(<< unquote_splicing(binary), argument :: binary>>, value) do
-      unquote(module).unquote(operation)(value, argument)
+    def apply(<< unquote_splicing(binary), argument :: binary>>, value, options) do
+      unquote(module).unquote(operation)(value, argument, options)
     end
   end
 

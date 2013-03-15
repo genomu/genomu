@@ -4,16 +4,16 @@ defmodule Genomu.Module.Dict do
   @nil_value MsgPack.pack(nil)
 
   @args 1
-  def value(MsgPack.fix_map(len: 0), _key) do
+  def value(MsgPack.fix_map(len: 0), _key, _opts) do
     @nil_value
   end
-  def value(MsgPack.fix_map(rest: rest), key) do
+  def value(MsgPack.fix_map(rest: rest), key, _opts) do
     value_(rest, key)
   end
-  def value(MsgPack.map16(rest: rest), key) do
+  def value(MsgPack.map16(rest: rest), key, _opts) do
     value_(rest, key)
   end
-  def value(MsgPack.map32(rest: rest), key) do
+  def value(MsgPack.map32(rest: rest), key, _opts) do
     value_(rest, key)
   end
 
@@ -33,7 +33,7 @@ defmodule Genomu.Module.Dict do
 
   @args 2
   @name :value 
-  def set(MsgPack.fix_map(len: 15, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def set(MsgPack.fix_map(len: 15, rest: rest), MsgPack.fix_array(len: 2, rest: pair), _opts) do
     {key, new_val} = MsgPack.next(pair)
     {new, appendp} = set_(rest, key, new_val)
     if appendp do
@@ -42,7 +42,7 @@ defmodule Genomu.Module.Dict do
       MsgPack.fix_map(len: 15, rest: new)
     end
   end
-  def set(MsgPack.fix_map(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def set(MsgPack.fix_map(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair), _opts) do
     {key, new_val} = MsgPack.next(pair)
     {new, appendp} = set_(rest, key, new_val)
     if appendp do
@@ -51,7 +51,7 @@ defmodule Genomu.Module.Dict do
       MsgPack.fix_map(len: len, rest: new)
     end
   end
-  def set(MsgPack.map16(len: 0x10000, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def set(MsgPack.map16(len: 0x10000, rest: rest), MsgPack.fix_array(len: 2, rest: pair), _opts) do
     {key, new_val} = MsgPack.next(pair)
     {new, appendp} = set_(rest, key, new_val)
     if appendp do
@@ -60,7 +60,7 @@ defmodule Genomu.Module.Dict do
       MsgPack.map16(len: 15, rest: new)
     end
   end
-  def set(MsgPack.map16(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def set(MsgPack.map16(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair), _opts) do
     {key, new_val} = MsgPack.next(pair)
     {new, appendp} = set_(rest, key, new_val)
     if appendp do
@@ -69,7 +69,7 @@ defmodule Genomu.Module.Dict do
       MsgPack.map16(len: len, rest: new)
     end
   end
-  def set(MsgPack.map32(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def set(MsgPack.map32(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair), _opts) do
     {key, new_val} = MsgPack.next(pair)
     {new, appendp} = set_(rest, key, new_val)
     if appendp do
@@ -78,7 +78,7 @@ defmodule Genomu.Module.Dict do
       MsgPack.map32(len: len, rest: new)
     end
   end
-  def set(@nil_value, MsgPack.fix_array(len: 2, rest: pair)) do
+  def set(@nil_value, MsgPack.fix_array(len: 2, rest: pair), _opts) do
     MsgPack.fix_map(len: 1, rest: pair)
   end
 
@@ -103,91 +103,91 @@ defmodule Genomu.Module.Dict do
   end
 
   @args 2
-  def update(MsgPack.fix_map(len: 15, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def update(MsgPack.fix_map(len: 15, rest: rest), MsgPack.fix_array(len: 2, rest: pair), opts) do
     {key, update} = MsgPack.next(pair)
     {update, ""} = MsgPack.unpack(update)
-    {new, appendp} = update_(rest, key, update)
+    {new, appendp} = update_(rest, key, update, opts)
     if appendp do
       MsgPack.map16(len: 16, rest: new)
     else
       MsgPack.fix_map(len: 15, rest: new)
     end
   end
-  def update(MsgPack.fix_map(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def update(MsgPack.fix_map(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair), opts) do
     {key, update} = MsgPack.next(pair)
     {update, ""} = MsgPack.unpack(update)
-    {new, appendp} = update_(rest, key, update)
+    {new, appendp} = update_(rest, key, update, opts)
     if appendp do
       MsgPack.fix_map(len: len + 1, rest: new)
     else
       MsgPack.fix_map(len: len, rest: new)
     end
   end
-  def update(MsgPack.map16(len: 0x10000, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def update(MsgPack.map16(len: 0x10000, rest: rest), MsgPack.fix_array(len: 2, rest: pair), opts) do
     {key, update} = MsgPack.next(pair)
     {update, ""} = MsgPack.unpack(update)
-    {new, appendp} = update_(rest, key, update)
+    {new, appendp} = update_(rest, key, update, opts)
     if appendp do
       MsgPack.map32(len: 0x10000 + 1, rest: new)
     else
       MsgPack.map16(len: 15, rest: new)
     end
   end
-  def update(MsgPack.map16(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def update(MsgPack.map16(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair), opts) do
     {key, update} = MsgPack.next(pair)
     {update, ""} = MsgPack.unpack(update)
-    {new, appendp} = update_(rest, key, update)
+    {new, appendp} = update_(rest, key, update, opts)
     if appendp do
       MsgPack.map16(len: len + 1, rest: new)
     else
       MsgPack.map16(len: len, rest: new)
     end
   end
-  def update(MsgPack.map32(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair)) do
+  def update(MsgPack.map32(len: len, rest: rest), MsgPack.fix_array(len: 2, rest: pair), opts) do
     {key, update} = MsgPack.next(pair)
     {update, ""} = MsgPack.unpack(update)
-    {new, appendp} = update_(rest, key, update)
+    {new, appendp} = update_(rest, key, update, opts)
     if appendp do
       MsgPack.map32(len: len + 1, rest: new)
     else
       MsgPack.map32(len: len, rest: new)
     end
   end
-  def update(@nil_value, MsgPack.fix_array(len: 2, rest: pair)) do
+  def update(@nil_value, MsgPack.fix_array(len: 2, rest: pair), opts) do
     {key, update} = MsgPack.next(pair)
     {update, ""} = MsgPack.unpack(update)
-    {new, true} = update_("", key, update)
+    {new, true} = update_("", key, update, opts)
     MsgPack.fix_map(len: 1, rest: new)
   end
 
-  defp update_(bin, key, update) do
-    update_(bin, key, update, "")
+  defp update_(bin, key, update, opts) do
+    update_(bin, key, update, "", opts)
   end
 
-  defp update_("", key, update, acc) do
-    {acc <> key <> Genomu.Operation.apply(update, @nil_value), true}
+  defp update_("", key, update, acc, opts) do
+    {acc <> key <> Genomu.Operation.apply(update, @nil_value, opts), true}
   end
-  defp update_(bin, key, update, acc) do
+  defp update_(bin, key, update, acc, opts) do
     sz = byte_size(key)
     case bin do
       << ^key :: [binary, size(sz)], rest :: binary >> ->
         {old_val, rest} = MsgPack.next(rest)
-        {acc <> key <> Genomu.Operation.apply(update, old_val) <> rest, false}
+        {acc <> key <> Genomu.Operation.apply(update, old_val, opts) <> rest, false}
       _ ->
         {another_key, bin} = MsgPack.next(bin)
         {val, bin} = MsgPack.next(bin)
-        update_(bin, key, update, acc <> another_key <> val)
+        update_(bin, key, update, acc <> another_key <> val, opts)
     end
   end
 
   @args 0
-  def keys(MsgPack.fix_map(rest: rest), _no_arg) do
+  def keys(MsgPack.fix_map(rest: rest), _no_arg, _opts) do
     keys_(rest)
   end
-  def keys(MsgPack.map16(rest: rest), _no_arg) do
+  def keys(MsgPack.map16(rest: rest), _no_arg, _opts) do
     keys_(rest)
   end
-  def keys(MsgPack.map32(rest: rest), _no_arg) do
+  def keys(MsgPack.map32(rest: rest), _no_arg, _opts) do
     keys_(rest)
   end
 
@@ -203,13 +203,13 @@ defmodule Genomu.Module.Dict do
   end
 
   @args 0
-  def values(MsgPack.fix_map(rest: rest), _no_arg) do
+  def values(MsgPack.fix_map(rest: rest), _no_arg, _opts) do
     values_(rest)
   end
-  def values(MsgPack.map16(rest: rest), _no_arg) do
+  def values(MsgPack.map16(rest: rest), _no_arg, _opts) do
     values_(rest)
   end
-  def values(MsgPack.map32(rest: rest), _no_arg) do
+  def values(MsgPack.map32(rest: rest), _no_arg, _opts) do
     values_(rest)
   end
 
@@ -226,13 +226,13 @@ defmodule Genomu.Module.Dict do
 
 
   @args 0
-  def size(MsgPack.fix_map(len: len), _no_arg) do
+  def size(MsgPack.fix_map(len: len), _no_arg, _opts) do
     MsgPack.pack(len)
   end
-  def size(MsgPack.map16(len: len), _no_arg) do
+  def size(MsgPack.map16(len: len), _no_arg, _opts) do
     MsgPack.pack(len)
   end
-  def size(MsgPack.map32(len: len), _no_arg) do
+  def size(MsgPack.map32(len: len), _no_arg, _opts) do
     MsgPack.pack(len)
   end
 

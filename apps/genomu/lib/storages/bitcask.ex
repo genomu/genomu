@@ -124,7 +124,15 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
           {value, binary} = MsgPack.next(binary)
           {operation, history} = MsgPack.unpack(binary)
       end
-      {value, operation, updates} = recalculate(txn_log, key, operation, value, [], ref)
+      if history == <<>> do
+        prev_version = ""
+      else 
+        case MsgPack.unpack(history) do
+          {[prev_version, _], _} -> :ok
+          {prev_version, _} -> :ok
+        end
+      end
+      {value, operation, updates} = recalculate(txn_log, prev_version, key, operation, value, [], ref)
       history_entry = history_entry(entry_clock, revision)
       if page_ctr <= @object_page_size do
         [{@log_prefix <> Enum.join(key) <> MsgPack.pack(page),
@@ -144,21 +152,21 @@ defimpl Genomu.Storage, for: Genomu.Storage.Bitcask do
   end
 
 
-  defp recalculate([], _, operation, acc, updates, _ref), do: {acc, operation, updates}
-  defp recalculate([{k, rev}|t], k, _operation, acc, updates, ref) do
-    {:ok, binary} = B.get(ref, Enum.join(k) <> rev)
+  defp recalculate([], _, _, operation, acc, updates, _ref), do: {acc, operation, updates}
+  defp recalculate([{k, ver}|t], prev_version, k, operation, acc, updates, ref) do
+    {:ok, binary} = B.get(ref, Enum.join(k) <> ver)
     {_value, op} = MsgPack.next(binary)
-    case Genomu.VNode.apply_operation(op, acc) do
+    case Genomu.VNode.apply_operation(op, acc, [operation: operation, version: prev_version]) do
       {:error, exception} ->
         raise Genomu.VNode.AbortCommitException, exception: exception
       Genomu.Operation.AbortException[] = e ->
         raise Genomu.VNode.AbortCommitException, exception: e
       acc ->
-        recalculate(t, k, op, acc, [{Enum.join(k) <> rev, acc <> op}|updates], ref)
+        recalculate(t, ver, k, op, acc, [{Enum.join(k) <> ver, acc <> op}|updates], ref)
     end
   end
-  defp recalculate([_|t], k, operation, acc, updates, ref) do
-    recalculate(t, k, operation, acc, updates, ref)
+  defp recalculate([_|t], prev_version, k, operation, acc, updates, ref) do
+    recalculate(t, prev_version, k, operation, acc, updates, ref)
   end
 
   @compile {:inline, [history_entry: 2]}
