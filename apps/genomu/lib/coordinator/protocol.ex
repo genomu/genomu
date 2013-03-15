@@ -7,6 +7,9 @@ defprotocol Genomu.Coordinator.Protocol do
   @spec init(dispatch_to) :: {:ok, state}
   def init(arg)
 
+  @spec options(dispatch_to) :: Genomu.Coordinator.options
+  def options(arg)
+
   @spec quorums(dispatch_to, state) :: {:ok, [GC.Quorum.t], state}
   def quorums(dispatch_to, state)
 

@@ -8,6 +8,10 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Command do
     {:ok, State.new}
   end
 
+  def options(Genomu.Command[timeout: timeout]) do
+    [timeout: timeout]
+  end
+
   def quorums(Genomu.Command[n: n, r: r, vnodes: vnodes] = command, State[] = state) do
     preflist = get_preflist(command)
     {:ok,

@@ -1,6 +1,6 @@
 defmodule Genomu.Coordinator do
 
-  defmacrop default_timeout, do: 1000 # TODO: 60000
+  defmacrop default_timeout, do: 5000
 
   @type option  :: {:timeout, timeout} |
                    {:for, term}
@@ -65,7 +65,8 @@ defmodule Genomu.Coordinator do
   def init(opts) do
     opts  = Keyword.merge(default_options, opts)
     {:ok, hstate} = Proto.init(opts[:for])
-    state = State.new(Keyword.merge(opts, handler_state: hstate)).touch
+    hopts = Proto.options(opts[:for])
+    state = State.new(Keyword.merge(opts, Keyword.merge(hopts, handler_state: hstate))).touch
     {:ok, :init, state}
   end
 
@@ -104,37 +105,42 @@ defmodule Genomu.Coordinator do
   def waiting({:ok, ref, partition, response},
               State[quorums: quorums,
                     for: for, handler_state: hstate, sent_at: sent_at] = state) do
-    :folsom_metrics.notify({Genomu.Metrics, PartitionResponseTime}, Genomu.Utils.now_in_microseconds - sent_at)
-    quorum = List.keyfind(quorums, ref, @quorum_ref_index)
-    case Proto.handle_response(for, response, partition, quorum, hstate) do
-      {:ok, quorum, hstate} ->
-         quorum = quorum.update_r(&1 - 1)
-      {:ignore, quorum, hstate} -> 
-         :ok
-    end
-    quorums = List.keyreplace(quorums, ref, @quorum_ref_index, quorum)
-    state = state.update(handler_state: hstate, quorums: quorums)
-    if all_quorums_ready?(quorums) do
-      :folsom_metrics.notify({Genomu.Metrics, QuorumTime}, Genomu.Utils.now_in_microseconds - sent_at)
-      case Proto.finalize(for, hstate) do
-        {:reply, response, hstate} ->
-          done(response, state.handler_state(hstate))
-        {:ok, hstate} ->
-          state = state.handler_state(hstate)
+    case time_exceeded?(state) do
+      true ->
+        done(:timeout, state)
+      {false, state, timeout} ->
+        :folsom_metrics.notify({Genomu.Metrics, PartitionResponseTime}, Genomu.Utils.now_in_microseconds - sent_at)
+        quorum = List.keyfind(quorums, ref, @quorum_ref_index)
+        case Proto.handle_response(for, response, partition, quorum, hstate) do
+          {:ok, quorum, hstate} ->
+             quorum = quorum.update_r(&1 - 1)
+          {:ignore, quorum, hstate} -> 
+             :ok
+        end
+        quorums = List.keyreplace(quorums, ref, @quorum_ref_index, quorum)
+        state = state.update(handler_state: hstate, quorums: quorums)
+        if all_quorums_ready?(quorums) do
+          :folsom_metrics.notify({Genomu.Metrics, QuorumTime}, Genomu.Utils.now_in_microseconds - sent_at)
+          case Proto.finalize(for, hstate) do
+            {:reply, response, hstate} ->
+              done(response, state.handler_state(hstate))
+            {:ok, hstate} ->
+              state = state.handler_state(hstate)
+              case time_exceeded?(state) do
+                true ->
+                  done(:timeout, state)
+                {false, state, timeout} ->
+                  {:next_state, :waiting, state, timeout}
+              end
+          end
+        else
           case time_exceeded?(state) do
             true ->
               done(:timeout, state)
             {false, state, timeout} ->
               {:next_state, :waiting, state, timeout}
           end
-      end
-    else
-      case time_exceeded?(state) do
-        true ->
-          done(:timeout, state)
-        {false, state, timeout} ->
-          {:next_state, :waiting, state, timeout}
-      end
+        end
     end
   end
 

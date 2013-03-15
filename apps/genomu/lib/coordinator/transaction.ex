@@ -11,6 +11,10 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
     {:ok, State.new}
   end
 
+  def options(Genomu.Transaction[timeout: timeout]) do
+    [timeout: timeout]
+  end
+ 
   @compile {:inline, get_quorums: 5, get_preflist: 2}
   defp get_quorums([], _qt, _txn, entries, quorums), do: {quorums, entries}
   defp get_quorums([{key, _} = cell|t], Genomu.Coordinator.Quorum[] = qt, txn, entries, quorums) do

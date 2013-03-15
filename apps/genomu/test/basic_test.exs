@@ -85,4 +85,14 @@ defmodule Genomu.BasicTest do
     assert C.get(ch, {"some1", vsn}, API.Core.identity, vsn: true, txn: true) == {"123", vsn0, vsn}
   end
 
+  test "short timeout", context do
+    conn = context[:conn]
+
+    {:ok, ch} = C.begin(conn, timeout: 0)
+
+    assert_raise Genomu.Client.TimeoutException, fn ->
+      C.set(ch, "some1", API.Core.identity("123"), vsn: true)
+    end
+  end
+
 end

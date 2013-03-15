@@ -1,13 +1,13 @@
 defrecord Genomu.Command, n: 3, r: 2, vnodes: :any,
                           cell: nil, type: nil, operation: nil,
-                          new_revision: nil do
+                          new_revision: nil, timeout: 5000 do
 
   @type type :: :set | :apply | :get
 
   record_type n: pos_integer, r: pos_integer, vnodes: :any | :primary,
               cell: Genomu.cell, 
               type: type, operation: Genomu.Operation.serialized,
-              new_revision: Genomu.revision
+              new_revision: Genomu.revision, timeout: non_neg_integer
 
   @spec set(Keyword.t | Genomu.operation) :: t
   def set(options) when is_list(options) do

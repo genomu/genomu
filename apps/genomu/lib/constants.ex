@@ -12,5 +12,6 @@ defmodule Genomu.Constants do
     defmacro n, do: 0
     defmacro r, do: 1
     defmacro vnode, do: 2
+    defmacro timeout, do: 3
   end
 end

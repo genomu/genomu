@@ -8,7 +8,7 @@
   "exmsgpack": {:git,"https://github.com/yrashk/exmsgpack.git","059f4bc8e03f39e70bf5701f11ee0c7d0c1f5ac5",[]},
   "exreloader": {:git,"https://github.com/yrashk/exreloader.git","0698218d917d731a267be929fcfac07782b5a74c",[]},
   "folsom": {:git,"https://github.com/boundary/folsom.git","f694abf41030c0612b5777a42a8d60d2b78f5f47",[]},
-  "genomu_client": {:git,"https://github.com/genomu/genomu-elixir.git","10e8e20f574827fb9199f4232c5380030eab475f",[]},
+  "genomu_client": {:git,"https://github.com/genomu/genomu-elixir.git","bf1d7dc15192b87190f57586dbaafe9e4ed8bf34",[]},
   "genx": {:git,"https://github.com/yrashk/genx.git","85fc66c93e5e5711635e5d031a4031538b295ce0",[]},
   "gproc": {:git,"https://github.com/uwiger/gproc.git","81ff4ce6d0ea2136845e1322521f2d42820d1dfb",[]},
   "hackney": {:git,"https://github.com/benoitc/hackney.git","88a7d65542fdd4f06e359d499da397d92825f054",[]},
