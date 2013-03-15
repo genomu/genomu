@@ -23,16 +23,6 @@ defmodule Genomu.Operation do
      argument] |> iolist_to_binary
   end
 
-  @spec deserialize(binary) :: {t, binary}
-  def deserialize(bin) do
-      {module_id, rest} = MsgPack.unpack(bin)
-      {operation_id, rest} = MsgPack.unpack(rest)
-      {argument, rest} = MsgPack.next(rest)
-      module = Genomu.Commands.module(module_id)
-      operation = Genomu.Module.operation(module, {:id, operation_id})[:name]
-      {{module, operation, argument}, rest}
-  end
-
 
   @modules [Genomu.Module.Core, Genomu.Module.Binary,
             Genomu.Module.List, Genomu.Module.Dict, Genomu.Module.Boolean,
@@ -43,6 +33,17 @@ defmodule Genomu.Operation do
   end
 
   def modules, do: @modules
+
+  @spec deserialize(binary) :: {t, binary}
+  lc module inlist @modules, {operation, _attrs} inlist Genomu.Module.operations(module) do
+    module_id = Genomu.Module.id(module)
+    operation_id = Genomu.Module.operation(module, {:name, operation})[:id]
+    binary = binary_to_list(MsgPack.pack(module_id) <> MsgPack.pack(operation_id))
+    def deserialize(<< unquote_splicing(binary), rest :: binary>>) do
+        {argument, rest} = MsgPack.next(rest)
+        {{unquote(module), unquote(operation), argument}, rest}
+    end
+  end
 
   lc module inlist @modules, {operation, _attrs} inlist Genomu.Module.operations(module) do
     module_id = Genomu.Module.id(module)
