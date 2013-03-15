@@ -10,7 +10,8 @@ In order to build and fire up Genomu, you'll need a couple of things:
 
 * Erlang R16B: http://erlang.org/
 * Elixir (latest master branch): https://github.com/elixir-lang/elixir
-* avahi daemon (only if you're on Linux, don't worry about it on OS X)
+* avahi daemon (only if you're on Linux, don't worry about it on OS X) and
+  avahi DNS-SD compatibility library (libavahi-compat-libdnssd-dev)
 
 To build, simply run `make`. Hopefully, this will end successfully and you
 can fire up a test cluster using `make start`. That will start three
