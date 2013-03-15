@@ -62,7 +62,7 @@ defmodule Genomu.Mixfile do
 
   defp deps(:test) do
     [
-     {:genomu_client, github: "genomu/genomu-elixir", branch: "yr-abort"},
+     {:genomu_client, github: "genomu/genomu-elixir"},
     ]
   end
   defp deps(_), do: []

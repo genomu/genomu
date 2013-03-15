@@ -50,11 +50,11 @@ defmodule Genomu.Module.CoreTest do
     {:ok, ch} = C.begin(conn)
     {:ok, ch1} = C.begin(conn)
 
-    C.apply(ch, ["tkey"], API.Core.assert(API.Boolean.equals?(nil)))
-    C.apply(ch1, ["tkey"], API.Core.assert(API.Boolean.equals?(nil)))
+    C.apply(ch, "tkey", API.Core.assert(API.Boolean.equals?(nil)))
+    C.apply(ch1, "tkey", API.Core.assert(API.Boolean.equals?(nil)))
 
-    C.set(ch, ["tkey"], API.Core.identity("ch"))
-    C.set(ch1, ["tkey"], API.Core.identity("ch1"))
+    C.set(ch, "tkey", API.Core.identity("ch"))
+    C.set(ch1, "tkey", API.Core.identity("ch1"))
 
     C.commit(ch1)
 
@@ -62,7 +62,7 @@ defmodule Genomu.Module.CoreTest do
       C.commit(ch)
     end
 
-    assert (C.execute conn, ch, do: C.get(ch, ["tkey"], API.Core.identity)) == "ch1"
+    assert (C.execute conn, ch, do: C.get(ch, "tkey", API.Core.identity)) == "ch1"
   end
 
   test "late assertion", context do
@@ -70,10 +70,10 @@ defmodule Genomu.Module.CoreTest do
 
     {:ok, ch} = C.begin(conn)
 
-    C.set(ch, ["lkey"], API.Core.identity("ch"))
+    C.set(ch, "lkey", API.Core.identity("ch"))
   
     assert_raise Genomu.Client.AbortException, fn ->
-      C.apply(ch, ["lkey"], API.Core.assert(API.Boolean.equals?(nil)))
+      C.apply(ch, "lkey", API.Core.assert(API.Boolean.equals?(nil)))
     end
 
   end

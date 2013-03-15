@@ -18,8 +18,10 @@ defmodule Genomu.QuorumTest do
   test "high read quorum results in a timeout", context do
     conn = context[:conn]
 
-    C.execute(conn, ch, n: 10, do: C.apply(ch, ["k"], API.Core.identity("123")))
-    assert {:error, Genomu.Client.TimeoutException[]} = C.execute(conn, ch, n: 10, r: 11, do: C.apply(ch, ["k"], API.Core.identity))
+    C.execute(conn, ch, n: 10, do: C.apply(ch, "k", API.Core.identity("123")))
+    assert_raise Genomu.Client.TimeoutException, fn ->
+      C.execute(conn, ch, n: 10, r: 11, do: C.apply(ch, "k", API.Core.identity))
+    end
   end
 
 end

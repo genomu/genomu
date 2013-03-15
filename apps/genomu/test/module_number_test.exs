@@ -19,20 +19,20 @@ defmodule Genomu.Module.NumberTest do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    assert C.get(ch, ["key"], API.Number.incr) == 1
-    C.set(ch, ["key"], API.Core.identity(1))
-    assert C.get(ch, ["key"], API.Number.incr) == 2
-    assert C.get(ch, ["key"], API.Number.incr(10)) == 11
+    assert C.get(ch, "key", API.Number.incr) == 1
+    C.set(ch, "key", API.Core.identity(1))
+    assert C.get(ch, "key", API.Number.incr) == 2
+    assert C.get(ch, "key", API.Number.incr(10)) == 11
   end
 
   test "decr", context do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    assert C.get(ch, ["key"], API.Number.decr) == -1
-    C.set(ch, ["key"], API.Core.identity(1))
-    assert C.get(ch, ["key"], API.Number.decr) == 0
-    assert C.get(ch, ["key"], API.Number.decr(10)) == -9
+    assert C.get(ch, "key", API.Number.decr) == -1
+    C.set(ch, "key", API.Core.identity(1))
+    assert C.get(ch, "key", API.Number.decr) == 0
+    assert C.get(ch, "key", API.Number.decr(10)) == -9
   end
 
 end

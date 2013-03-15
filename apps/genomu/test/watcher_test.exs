@@ -19,9 +19,9 @@ defmodule Genomu.WatcherTest do
     conn = context[:conn]
 
     me = self
-    {:ok, _w, ref} = C.watch(conn, fn(ref, k, co) -> me <- {ref, k, co} end, [["mykey"]])
+    {:ok, _w, ref} = C.watch(conn, fn(ref, k, co) -> me <- {ref, k, co} end, "mykey")
 
-    C.execute conn, ch, do: C.set(ch, ["mykey"], API.Core.identity(1))
+    C.execute conn, ch, do: C.set(ch, "mykey", API.Core.identity(1))
 
     assert_receive {^ref, ["mykey"], _}, 2_000
   end
@@ -30,11 +30,11 @@ defmodule Genomu.WatcherTest do
     conn = context[:conn]
 
     me = self
-    {:ok, _w, ref} = C.watch(conn, fn(ref, k, co) -> me <- {ref, k, co} end, [["mykey1"],["mykey2"]])
+    {:ok, _w, ref} = C.watch(conn, fn(ref, k, co) -> me <- {ref, k, co} end, ["mykey1","mykey2"])
 
     C.execute conn, ch do
-      C.set(ch, ["mykey1"], API.Core.identity(1))
-      C.set(ch, ["mykey2"], API.Core.identity(1))
+      C.set(ch, "mykey1", API.Core.identity(1))
+      C.set(ch, "mykey2", API.Core.identity(1))
     end
 
     assert_receive {^ref, ["mykey1"], txn1}, 2_000

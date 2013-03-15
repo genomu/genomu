@@ -19,20 +19,20 @@ defmodule Genomu.Module.DictTest do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    C.set(ch, ["key"], API.Dict.value("k", 1))
-    C.set(ch, ["key"], API.Dict.value("k1", 1))
-    C.set(ch, ["key"], API.Dict.value("k", 2))
-    assert C.get(ch, ["key"], API.Dict.value("k")) == 2
+    C.set(ch, "key", API.Dict.value("k", 1))
+    C.set(ch, "key", API.Dict.value("k1", 1))
+    C.set(ch, "key", API.Dict.value("k", 2))
+    assert C.get(ch, "key", API.Dict.value("k")) == 2
   end
 
   test "keys", context do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    C.set(ch, ["key"], API.Dict.value("k", 1))
-    C.set(ch, ["key"], API.Dict.value("k1", 1))
-    C.set(ch, ["key"], API.Dict.value("k", 2))
-    assert Enum.sort(C.get(ch, ["key"], API.Dict.keys)) == 
+    C.set(ch, "key", API.Dict.value("k", 1))
+    C.set(ch, "key", API.Dict.value("k1", 1))
+    C.set(ch, "key", API.Dict.value("k", 2))
+    assert Enum.sort(C.get(ch, "key", API.Dict.keys)) == 
            Enum.sort(["k","k1"])
   end
 
@@ -40,10 +40,10 @@ defmodule Genomu.Module.DictTest do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    C.set(ch, ["key"], API.Dict.value("k", 1))
-    C.set(ch, ["key"], API.Dict.value("k1", 1))
-    C.set(ch, ["key"], API.Dict.value("k", 2))
-    assert Enum.sort(C.get(ch, ["key"], API.Dict.values)) == 
+    C.set(ch, "key", API.Dict.value("k", 1))
+    C.set(ch, "key", API.Dict.value("k1", 1))
+    C.set(ch, "key", API.Dict.value("k", 2))
+    assert Enum.sort(C.get(ch, "key", API.Dict.values)) == 
            Enum.sort([1, 2])
   end
 
@@ -52,10 +52,10 @@ defmodule Genomu.Module.DictTest do
 
     {:ok, ch} = C.begin(conn)
     dict = MsgPack.Map.from_list([{"ctr", 0}])
-    C.set(ch, ["key"], API.Core.identity(MsgPack.Map.from_list([{"ctr", 0}, {"dict", dict}])))
-    assert C.set(ch, ["key"], API.Dict.update("ctr", API.Number.incr)) ==
+    C.set(ch, "key", API.Core.identity(MsgPack.Map.from_list([{"ctr", 0}, {"dict", dict}])))
+    assert C.set(ch, "key", API.Dict.update("ctr", API.Number.incr)) ==
            MsgPack.Map.from_list([{"ctr", 1},{"dict", dict}])
-    assert C.set(ch, ["key"], API.Dict.update("dict",API.Dict.update("ctr", API.Number.incr))) ==
+    assert C.set(ch, "key", API.Dict.update("dict",API.Dict.update("ctr", API.Number.incr))) ==
            MsgPack.Map.from_list([{"ctr", 1},{"dict",MsgPack.Map.from_list([{"ctr", 1}])}])
   end
 
