@@ -119,7 +119,7 @@ defmodule Genomu.Channel do
   def fork(server), do: fork(server, nil)
 
   defcall fork(receiver), state: State[clock: clock] = state do
-  Lager.debug "Channel fork #{inspect receiver} state: #{inspect state}"
+    Lager.debug "Channel fork #{inspect receiver} state: #{inspect state}"
     state = ensure_children(state)
     {new_clock, channel_clock} = ITC.fork(clock)
     if nil?(receiver) do
