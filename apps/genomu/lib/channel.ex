@@ -53,7 +53,7 @@ defmodule Genomu.Channel do
         new_file = true
       end
       {:ok, file} = File.open(filename, [:binary, :raw, :read, :write])
-      state = state.crash_clock_file(file)
+      __MODULE__[] = state = state.crash_clock_file(file)
       if new_file do
           crash_clock =
             unless nil?(parent) do
@@ -118,9 +118,9 @@ defmodule Genomu.Channel do
   @spec fork(Genomu.gen_server_ref, channel :: Genomu.gen_server_ref) :: ITC.t
   def fork(server), do: fork(server, nil)
 
-  defcall fork(receiver), state: State[clock: clock] = state do
+  defcall fork(receiver), state: State[clock: clock, outstanding: o] = state do
     Lager.debug "Channel fork #{inspect receiver} state: #{inspect state}"
-    state = ensure_children(state)
+    State[] = state = ensure_children(state)
     {new_clock, channel_clock} = ITC.fork(clock)
     if nil?(receiver) do
       {:ok, channel} = :supervisor.start_child(Genomu.Sup.Channels, [false, self, channel_clock])
@@ -132,7 +132,7 @@ defmodule Genomu.Channel do
                 [{{:ref, ref}, channel},
                  {channel, channel_clock},
                  {channel_clock, channel}])
-    state = state.clock(new_clock).update_outstanding([channel_clock|&1])
+    State[] = state = state.clock(new_clock).outstanding([channel_clock|o])
     if nil?(receiver) do
       {:reply, {:ok, channel}, state}
     else
@@ -170,12 +170,12 @@ defmodule Genomu.Channel do
   end
 
 
-  defcast update(channel, new_clock), state: State[children: c] = state do
+  defcast update(channel, new_clock), state: State[children: c, outstanding: o] = state do
     case :ets.lookup(c, channel) do
       [{^channel, clock}] ->
         :ets.insert(c, [{channel, new_clock}, {new_clock, channel}])
         :ets.delete(c, clock)
-        state = state.update_outstanding(fn(o) -> [new_clock|o] -- [clock] end)
+        state = state.outstanding([new_clock|o] -- [clock])
       [] -> 
         :ok # TODO: log a warning?
     end
@@ -183,13 +183,13 @@ defmodule Genomu.Channel do
   end
 
   def handle_info({:DOWN, ref, :process, pid, _},
-                  __MODULE__.State[clock: clock, children: c] = state) do
+                  __MODULE__.State[clock: clock, children: c, outstanding: o] = state) do
     [{^pid, child_clock}] = :ets.lookup(c, pid)
     :ets.delete(c, {:ref, ref})
     :ets.delete(c, pid)
     :ets.delete(c, child_clock)
     clock = ITC.join(clock, child_clock)
-    state = state.clock(clock).update_outstanding(fn(o) -> o -- [child_clock] end)
+    State[] = state = state.clock(clock).outstanding(o -- [child_clock])
     state = state.crash_clock(Enum.reduce(state.outstanding, clock, fn(c, c1) -> ITC.join(c, c1) end))
     {:noreply, state}
   end
@@ -199,15 +199,15 @@ defmodule Genomu.Channel do
     if cmd.assertion? and state.modified do
       {:reply, :abort, state}
     else
-      state = ensure_snapshot(state)
+      State[] = state = ensure_snapshot(state)
       clock = next_clock(state.clock, cmd)
       cell = get_cell(key, state)
       revision = ITC.encode_binary(clock)
-      cmd = cmd.update(cell: cell, new_revision: revision)
+      cmd = cmd.cell(cell).new_revision(revision)
       coord_options = [for: cmd] |>
                       Keyword.merge(options)
       result = Genomu.Coordinator.run(coord_options)
-      state = memoize(key, cmd, clock, revision, state)
+      State[] = state = memoize(key, cmd, clock, revision, state)
       {:reply, result, state.modified((not cmd.assertion?) and cmd.type in [:set, :apply])}
     end
   end
@@ -220,7 +220,7 @@ defmodule Genomu.Channel do
         {:reply, :ok, state}
       _ ->
         clock = sync(parent, clock)
-        txn = txn.update(clock: clock, log: Enum.reverse(log))
+        txn = txn.clock(clock).log(Enum.reverse(log))
         result = Genomu.Coordinator.run(for: txn)
         update(parent, self, clock)
         stop(self)

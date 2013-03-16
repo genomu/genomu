@@ -72,12 +72,12 @@ defmodule Genomu.Coordinator do
 
   defevent init/execute, export: [timeout: :infinity], sync: true, from: from, 
                          state: State[] = state do
-    {:next_state, :prepare, state.update(from: from, started_at: Genomu.Utils.now_in_microseconds), 0}
+    {:next_state, :prepare, state.from(from).started_at(Genomu.Utils.now_in_microseconds), 0}
   end
 
   defevent prepare/timeout, state: State[for: for, handler_state: hstate] = state do
     {:ok, quorums, hstate} = Proto.quorums(for, hstate)
-    {:next_state, :execute, state.update(handler_state: hstate, quorums: quorums), 0}
+    {:next_state, :execute, state.handler_state(hstate).quorums(quorums), 0}
   end
 
   defevent execute/timeout, state: State[quorums: quorums, 
@@ -108,17 +108,17 @@ defmodule Genomu.Coordinator do
     case time_exceeded?(state) do
       true ->
         done(:timeout, state)
-      {false, state, timeout} ->
+      {false, State[] = state, timeout} ->
         :folsom_metrics.notify({Genomu.Metrics, PartitionResponseTime}, Genomu.Utils.now_in_microseconds - sent_at)
         quorum = List.keyfind(quorums, ref, @quorum_ref_index)
         case Proto.handle_response(for, response, partition, quorum, hstate) do
-          {:ok, quorum, hstate} ->
-             quorum = quorum.update_r(&1 - 1)
+          {:ok, Quorum[r: r] = quorum, hstate} ->
+             quorum = quorum.r(r - 1)
           {:ignore, quorum, hstate} -> 
              :ok
         end
         quorums = List.keyreplace(quorums, ref, @quorum_ref_index, quorum)
-        state = state.update(handler_state: hstate, quorums: quorums)
+        State[] = state = state.handler_state(hstate).quorums(quorums)
         if all_quorums_ready?(quorums) do
           :folsom_metrics.notify({Genomu.Metrics, QuorumTime}, Genomu.Utils.now_in_microseconds - sent_at)
           case Proto.finalize(for, hstate) do

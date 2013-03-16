@@ -25,7 +25,7 @@ defimpl Genomu.Coordinator.Protocol, for: Genomu.Transaction do
           cells = List.keystore(cells, key, 0, cell)
           entries = List.keyreplace(entries, ref, 0, {ref, cells})
         _ ->
-          quorum = qt.update(ref: ref, preflist: preflist)
+          quorum = qt.ref(ref).preflist(preflist)
           entries = [{ref, [cell]}|entries]
           quorums = [quorum|quorums]
       end
