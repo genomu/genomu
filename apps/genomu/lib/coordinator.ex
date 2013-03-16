@@ -83,9 +83,9 @@ defmodule Genomu.Coordinator do
   defevent execute/timeout, state: State[quorums: quorums, 
                                          for: for, handler_state: hstate] = state do
     hstate = Enum.reduce quorums, hstate, 
-                         fn(quorum, hstate) ->
+                         fn(Quorum[preflist: preflist] = quorum, hstate) ->
                            {:ok, message, hstate} = Proto.message(for, quorum, hstate)
-                           Genomu.Quorum.command(quorum.preflist, message,
+                           Genomu.Quorum.command(preflist, message,
                                                  {:fsm, :undefined, self})
                            hstate
                          end
