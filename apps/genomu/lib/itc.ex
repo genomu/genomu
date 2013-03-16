@@ -96,11 +96,12 @@ defmodule ITC do
 
   @spec event(t) :: t
   def event({i,e}) do
-    if fill(i,e) != e do
-      {i, fill(i, e)}
-    else
-      {e1, _} = grow(i, e)
-      {i, e1}
+    case fill(i, e) do
+      ^e ->
+        {e1, _} = grow(i, e)
+        {i, e1}
+      e1 ->
+        {i, e1}
     end
   end
 
