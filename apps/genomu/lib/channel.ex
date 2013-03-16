@@ -4,10 +4,13 @@ defmodule Genomu.Channel do
 
   require Lager
 
+  @nroot_channels :"mochiglobal:#{Genomu.Channel.NRootChannels}"
+  @root_channels :"mochiglobal:#{Genomu.Channel.RootChannels}"
+
   @spec start :: {:ok, pid} | {:error, reason :: term}
   def start do
-    i = :random.uniform(:mochiglobal.get(Genomu.Channel.NRootChannels))
-    Genomu.Channel.fork elem(:mochiglobal.get(Genomu.Channel.RootChannels), i - 1)
+    i = :random.uniform(@nroot_channels.term)
+    Genomu.Channel.fork elem(@root_channels.term, i - 1)
   end
 
   @spec start_link(root :: atom | boolean, 
