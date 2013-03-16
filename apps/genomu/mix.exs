@@ -7,6 +7,7 @@ defmodule Genomu.Mixfile do
       deps:      deps,
       deps_path: Path.join(root, "deps"),
       lockfile:  Path.join(root, "mix.lock"),
+      elixirc_options: [ignore_module_conflict: true, docs: true, debug_info: true] ++ options(Mix.env)
     ]
   end
 
@@ -70,5 +71,10 @@ defmodule Genomu.Mixfile do
   defp root do
     Path.join([Path.dirname(__FILE__), "..", ".."]) |> Path.expand
   end
+
+  defp options(env) when env in [:dev, :test] do
+    [exlager_level: 7]
+  end
+  defp options(_), do: []
 
 end
