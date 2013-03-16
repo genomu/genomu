@@ -67,6 +67,20 @@ defmodule Genomu.TestCase do
     :application.set_env(:sasl, :sasl_error_logger, false)    
     Application.start(:genomu)
     Application.start(:genomu_client)
+
+    # vnode breaker
+    :ets.new(:vnode_breaker, [:public, :named_table])
+    :meck.new(:riak_core_vnode_manager, [:passthrough])
+    :meck.expect(:riak_core_vnode_manager, :get_vnode_pid,
+                 fn(i, vn) ->
+                   case :ets.lookup(:vnode_breaker, i) do
+                     [{_, pid}] when is_pid(pid) ->
+                       if Process.alive?(pid), do: {:ok, pid}, else: :meck.passthrough([i,vn])
+                     [] ->
+                       :meck.passthrough([i,vn])
+                   end
+                 end)
+
     :riak_core.wait_for_application(:genomu)
     :riak_core.wait_for_service(:genomu)
   end
@@ -85,6 +99,8 @@ defmodule Genomu.TestCase do
     data_dir = Path.expand("../.test",__FILE__)
     File.rm_rf(data_dir)
     :net_kernel.stop
+    :meck.unload(:riak_core_vnode_manager)
+    :ets.delete(:vnode_breaker)
   end
 
   def breaker(pid, f) do
@@ -103,15 +119,16 @@ defmodule Genomu.TestCase do
     {:ok, vnode_pid} = :riak_core_vnode_manager.get_vnode_pid(index, Genomu.VNode)
     breaker_pid = breaker(vnode_pid, f)
 
-    :meck.new(:riak_core_vnode_manager, [:passthrough])
-    :meck.expect(:riak_core_vnode_manager, :get_vnode_pid,
-                 fn(i, vn) ->
-                   if i == index, do: {:ok, breaker_pid}, else: :meck.passthrough([i,vn])
-                 end)
+    :riak_core_vnode_proxy.unregister_vnode(Genomu.VNode, index, vnode_pid)
+
+    :ets.insert(:vnode_breaker, {index, breaker_pid})
     breaker_pid
   end
 
-  def unbreak_vnodes do
-    :meck.unload(:riak_core_vnode_manager)
+  def unbreak_vnode(index) do
+    [{_, breaker_pid}] = :ets.lookup(:vnode_breaker, index)
+    Process.exit(breaker_pid, :normal)
+    :ets.delete(:vnode_breaker, index)
+    :riak_core_vnode_proxy.unregister_vnode(Genomu.VNode, index, self)
   end
 end
