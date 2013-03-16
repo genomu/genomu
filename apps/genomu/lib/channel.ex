@@ -195,7 +195,7 @@ defmodule Genomu.Channel do
   end
 
   @spec execute(pid, Genomu.key | Genomu.cell, Genomu.command, Keyword.t) :: term
-  defcall execute(key, cmd, options), state: State[] = state do
+  defcall execute(key, Genomu.Command[] = cmd, options), state: State[] = state do
     if cmd.assertion? and state.modified do
       {:reply, :abort, state}
     else
