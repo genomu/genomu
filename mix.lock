@@ -25,5 +25,4 @@
   "ranch": {:git,"https://github.com/extend/ranch.git","d635aece25ae0d6489d2c3c074cfb6363d92fc61",[tag: "0.6.1"]},
   "riak_core": {:git,"https://github.com/basho/riak_core.git","2f13622cd683f5963d16cfc4216ad823bada6508",[]},
   "riak_sysmon": {:git,"https://github.com/basho/riak_sysmon.git","b73884b85297e1b5e2c053bd60106c72036cfa9e",[]},
-  "webmachine": {:git,"https://github.com/basho/webmachine.git","75786f44b478b01588933924893c9bba91911730",[]},
-  "xup": {:git,"https://github.com/yrashk/xup.git","a008de2d50790343cdbe401abf90a1ab5b6b49e9",[]} ]
+  "webmachine": {:git,"https://github.com/basho/webmachine.git","75786f44b478b01588933924893c9bba91911730",[]} ]

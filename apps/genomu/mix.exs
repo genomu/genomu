@@ -15,7 +15,7 @@ defmodule Genomu.Mixfile do
 
   def application do
     [applications: [:gproc,
-                    :exlager, :xup, :genx, :exmsgpack,
+                    :exlager, :genx, :exmsgpack,
                     :compiler, :syntax_tools, ## riak_core
                     :bitcask,
                     :jsx,
@@ -35,7 +35,6 @@ defmodule Genomu.Mixfile do
   defp deps do
     [
      {:genx,          github: "yrashk/genx"},
-     {:xup,           github: "yrashk/xup"},
      {:exmsgpack,     github: "yrashk/exmsgpack"},
      {:exlager,       github: "khia/exlager"},
      {:exreloader,    github: "yrashk/exreloader"},

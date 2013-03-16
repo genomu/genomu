@@ -48,7 +48,6 @@ defmodule Genomu.Cluster do
     case :riak_core.staged_join(node) do
       :ok ->
         :ok = Genomu.Channel.sync_with(Genomu.Channel.Root, {Genomu.Channel.Root, node})
-        Genomu.Channel.restart_roots
         :ok
       {:error, _} = error ->
         error

@@ -10,24 +10,6 @@ defmodule Genomu.Channel do
     Genomu.Channel.fork elem(:mochiglobal.get(Genomu.Channel.RootChannels), i - 1)
   end
 
-  defp wait_for_channel_to_die(ch) do
-    wait_for_channel_to_die(Process.whereis(ch), true)
-  end
-  defp wait_for_channel_to_die(nil, _), do: :ok
-  defp wait_for_channel_to_die(ch, true) do
-    wait_for_channel_to_die(ch, Process.alive?(ch))
-  end
-  defp wait_for_channel_to_die(_, false), do: :ok
-
-  def restart_roots do
-      lc ch inlist tuple_to_list(:mochiglobal.get(Genomu.Channel.RootChannels)) do
-        stop(ch)
-        wait_for_channel_to_die(ch)
-        Genomu.Channel.fork(Genomu.Channel.Root, ch)
-      end
-      :ok
-  end
-
   @spec start_link(root :: atom | boolean, 
                    parent :: nil | Genomu.gen_server_ref, 
                    clock :: ITC.t | nil) :: {:ok, pid} | {:error, reason :: term}
@@ -56,29 +38,34 @@ defmodule Genomu.Channel do
                 modified: true,
                 children: nil | :ets.tid
 
+    def crash_clock_filename(__MODULE__[root: root]) do
+      data_dir = Application.environment(:genomu)[:data_dir]
+      Path.join(data_dir, "#{inspect root}")
+    end
+
     @spec initialize(t) :: t
     def initialize(__MODULE__[root: false] = state) do
       state
     end
-    # If it's a root channel, and the clock is not
-    # specified, read it
-    def initialize(__MODULE__[root: root, clock: clock] = state) do
-      data_dir = Application.environment(:genomu)[:data_dir]
-      filename = Path.join(data_dir, "#{inspect root}")
+    def initialize(__MODULE__[parent: parent] = state) do
+      filename = crash_clock_filename(state)
       unless File.exists?(filename) do
         new_file = true
       end
       {:ok, file} = File.open(filename, [:binary, :raw, :read, :write])
       state = state.crash_clock_file(file)
-      unless nil?(clock) do
-        crash_clock = clock
+      if new_file do
+          crash_clock =
+            unless nil?(parent) do
+              Genomu.Channel.fork(parent, self)
+            else
+              ITC.seed
+            end
+          Lager.debug "Channel #{inspect state.root}: assume clock #{inspect crash_clock}"
       else
-        if new_file do
-          crash_clock = ITC.seed
-        else
           {:ok, bin} = :file.pread(file, 0, File.stat!(filename).size)
           crash_clock = ITC.decode(bin)
-        end
+          Lager.debug "Channel #{inspect state.root}: recover clock #{inspect crash_clock}"
       end
       state.crash_clock(crash_clock).clock(crash_clock)
     end
@@ -128,20 +115,30 @@ defmodule Genomu.Channel do
   end
 
   @spec fork(Genomu.gen_server_ref) :: {:ok, pid}
-  @spec fork(Genomu.gen_server_ref, root :: atom | boolean) :: {:ok, pid}
-  def fork(server), do: fork(server, false)
+  @spec fork(Genomu.gen_server_ref, channel :: Genomu.gen_server_ref) :: ITC.t
+  def fork(server), do: fork(server, nil)
 
-  defcall fork(root), state: State[clock: clock] = state do
+  defcall fork(receiver), state: State[clock: clock] = state do
+  Lager.debug "Channel fork #{inspect receiver} state: #{inspect state}"
     state = ensure_children(state)
-
     {new_clock, channel_clock} = ITC.fork(clock)
-    {:ok, channel} = :supervisor.start_child(Genomu.Sup.Channels, [root, self, channel_clock])
-    Process.monitor(channel)
+    if nil?(receiver) do
+      {:ok, channel} = :supervisor.start_child(Genomu.Sup.Channels, [false, self, channel_clock])
+    else
+      channel = receiver
+    end
+    ref = Process.monitor(channel)
     :ets.insert(state.children,
-                [{channel, channel_clock},
+                [{{:ref, ref}, channel},
+                 {channel, channel_clock},
                  {channel_clock, channel}])
     state = state.clock(new_clock).update_outstanding([channel_clock|&1])
-    {:reply, {:ok, channel}, state}
+    if nil?(receiver) do
+      {:reply, {:ok, channel}, state}
+    else
+      Lager.debug "Channel #{inspect state.root}: forking #{inspect channel_clock} into #{inspect receiver}"
+      {:reply, channel_clock, state}
+    end
   end
 
   @spec fork_root(Genomu.gen_server_ref) :: ITC.t
@@ -160,9 +157,16 @@ defmodule Genomu.Channel do
   end
 
   @spec sync_with(server :: Genomu.gen_server_ref, sync_with :: Genomu.gen_server_ref) :: :ok
-  defcall sync_with(sync_with), state: State[] = state do
+  defcall sync_with(sync_with), state: State[root: Genomu.Channel.Root, children: c] = state do
     clock = fork_root(sync_with)
-    {:reply, :ok, state.clock(clock).parent(sync_with).crash_clock(clock)}
+    Lager.debug "Channel #{inspect Genomu.Channel.Root}: sync_with #{inspect sync_with}, assume clock #{inspect clock}"
+    :ets.match(c, {{:ref, :"$1"}, :_}) |> Enum.map(fn([ref]) -> Process.demonitor(ref) end)
+    :ets.delete_all_objects(c)
+    lc ch inlist tuple_to_list(:mochiglobal.get(Genomu.Channel.RootChannels)), do: wipeout(ch)
+    :ok = :supervisor.terminate_child(:genomu_sup, Genomu.Sup.Channels)
+    {:ok, _child} = :supervisor.restart_child(:genomu_sup, Genomu.Sup.Channels)
+    state = state.clock(clock).parent(sync_with).crash_clock(clock).outstanding([])
+    {:reply, :ok, state}
   end
 
 
@@ -178,9 +182,10 @@ defmodule Genomu.Channel do
     {:noreply, state}
   end
 
-  def handle_info({:DOWN, _ref, :process, pid, _},
+  def handle_info({:DOWN, ref, :process, pid, _},
                   __MODULE__.State[clock: clock, children: c] = state) do
     [{^pid, child_clock}] = :ets.lookup(c, pid)
+    :ets.delete(c, {:ref, ref})
     :ets.delete(c, pid)
     :ets.delete(c, child_clock)
     clock = ITC.join(clock, child_clock)
@@ -231,6 +236,14 @@ defmodule Genomu.Channel do
 
   @spec stop(Genomu.gen_server_ref) :: :ok
   defcast stop, state: state do
+    {:stop, :normal, state}
+  end
+
+  @spec wipeout(Genomu.gen_server_ref) :: :ok
+  defcast wipeout, state: State[root: _root] = state do
+    File.close(state.crash_clock_file)
+    _result = File.rm(state.crash_clock_filename)
+    Lager.debug "Channel #{inspect _root}: wipeout (#{inspect _result})"
     {:stop, :normal, state}
   end
 
