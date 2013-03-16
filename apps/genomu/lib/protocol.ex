@@ -58,6 +58,8 @@ defmodule Genomu.Protocol do
 
   @true_value MsgPack.pack(true)
   @nil_value MsgPack.pack(nil)
+  @txn_value Genomu.Transaction.new
+  @cmd_value Genomu.Command.new
 
   @spec handle_packet(binary, State.t) :: {State.t, binary}
   defp handle_packet(data, State[channels: channels] = state) do
@@ -69,7 +71,9 @@ defmodule Genomu.Protocol do
           {MsgPack.Map[map: options], rest} ->
             {:ok, ch} = Genomu.Channel.start
             Process.link(ch)
-            :ets.insert(channels, [{channel, ch, options}, {ch, channel}])
+            templates = {set_txn_options(options, @txn_value),
+                         set_command_options(options, @cmd_value)}
+            :ets.insert(channels, [{channel, ch, templates}, {ch, channel}])
           {subscriptions, rest} when is_list(subscriptions) ->
             {:ok, ch} = Genomu.Watcher.start(fn(subscription, co) ->
                                                :gen_server.cast(me, {:subscription, channel, subscription, co})
@@ -77,14 +81,13 @@ defmodule Genomu.Protocol do
             Process.link(ch)
             :ets.insert(channels, [{channel, ch, subscriptions}, {ch, channel}])
         end
-      [{_, ch, options}] ->
+      [{_, ch, {txn_t, cmd_t}}] ->
         {key, rest} = MsgPack.unpack(rest)
         :ets.insert(channels, {{:t, channel}, Genomu.Utils.now_in_microseconds})
         case key do
           true ->
-             txn = set_txn_options(options, Genomu.Transaction.new)
              spawn(fn ->
-                response = Genomu.Channel.commit(ch, txn)
+                response = Genomu.Channel.commit(ch, txn_t)
                 :gen_server.cast(me, {channel, response})
               end)
           false ->
@@ -98,7 +101,7 @@ defmodule Genomu.Protocol do
               addr -> :ok
             end
             {type, op} = MsgPack.unpack(rest)
-            cmd = set_command_options(options, command(type, op))
+            cmd = command(type, op, cmd_t)
             spawn(fn ->
                     response = Genomu.Channel.execute(ch, addr, cmd, [])
                     :gen_server.cast(me, {channel, response})
@@ -128,9 +131,9 @@ defmodule Genomu.Protocol do
   alias Genomu.Constants.ChannelOptions, as: CO
   require CO
 
-  defp command(0, op), do: Genomu.Command.get(op)
-  defp command(1, op), do: Genomu.Command.set(op)
-  defp command(2, op), do: Genomu.Command.apply(op)
+  defp command(0, op, Genomu.Command[] = cmd), do: cmd.type(:get).operation(op)
+  defp command(1, op, Genomu.Command[] = cmd), do: cmd.type(:set).operation(op)
+  defp command(2, op, Genomu.Command[] = cmd), do: cmd.type(:apply).operation(op)
 
   defp set_command_options([], cmd), do: cmd
   defp set_command_options([{CO.n, n}|t], Genomu.Command[] = cmd) do
@@ -163,7 +166,7 @@ defmodule Genomu.Protocol do
     set_txn_options(t, txn.vnode(:primary))
   end
   defp set_txn_options([{CO.timeout, timeout}|t], Genomu.Transaction[] = txn) do
-    set_command_options(t, txn.timeout(timeout))
+    set_txn_options(t, txn.timeout(timeout))
   end
 
 end
