@@ -41,18 +41,18 @@ defmodule Genomu.Protocol do
     end
   end
 
-  def handle_cast({:subscription, channel, subscription, commit_object},
-                  State[socket: socket, transport: transport] = state) do
-    transport.send(socket, channel <> MsgPack.pack(subscription) <> MsgPack.pack(commit_object))
-    {:noreply, state}
-  end
-
-  def handle_cast({channel, response}, State[channels: channels, transport: transport, socket: socket] = state) do
+  def handle_info({channel, response}, State[channels: channels, transport: transport, socket: socket] = state) do
     t1 = Genomu.Utils.now_in_microseconds
     [{_, t}] = :ets.lookup(channels, {:t, channel})
     :ets.delete(channels, {:t, channel})
     :folsom_metrics.notify({Genomu.Metrics, ChannelResponseTime}, t1 - t)
     transport.send(socket, channel <> handle_response(response))
+    {:noreply, state}
+  end
+
+  def handle_cast({:subscription, channel, subscription, commit_object},
+                  State[socket: socket, transport: transport] = state) do
+    transport.send(socket, channel <> MsgPack.pack(subscription) <> MsgPack.pack(commit_object))
     {:noreply, state}
   end
 
@@ -86,15 +86,9 @@ defmodule Genomu.Protocol do
         :ets.insert(channels, {{:t, channel}, Genomu.Utils.now_in_microseconds})
         case key do
           true ->
-             spawn(fn ->
-                response = Genomu.Channel.commit(ch, txn_t)
-                :gen_server.cast(me, {channel, response})
-              end)
+            Genomu.Channel.commit(ch, txn_t, channel, self)
           false ->
-             spawn(fn ->
-                response = Genomu.Channel.discard(ch)
-                :gen_server.cast(me, {channel, response})
-              end)
+            Genomu.Channel.discard(ch, channel, self)
           _ ->
             case key do
               MsgPack.Map[map: [{"vsn", [key, rev]}]] -> addr = {key, rev}
@@ -102,10 +96,7 @@ defmodule Genomu.Protocol do
             end
             {type, op} = MsgPack.unpack(rest)
             cmd = command(type, op, cmd_t)
-            spawn(fn ->
-                    response = Genomu.Channel.execute(ch, addr, cmd, [])
-                    :gen_server.cast(me, {channel, response})
-                  end)
+            Genomu.Channel.execute(ch, addr, cmd, [], channel, self)
         end
     end
     state

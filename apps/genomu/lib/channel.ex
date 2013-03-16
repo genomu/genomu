@@ -194,10 +194,11 @@ defmodule Genomu.Channel do
     {:noreply, state}
   end
 
-  @spec execute(pid, Genomu.key | Genomu.cell, Genomu.command, Keyword.t) :: term
-  defcall execute(key, Genomu.Command[] = cmd, options), state: State[] = state do
+  @spec execute(pid, Genomu.key | Genomu.cell, Genomu.command, Keyword.t, term, pid) :: :ok
+  defcast execute(key, Genomu.Command[] = cmd, options, tag, pid), state: State[] = state do
     if cmd.assertion? and state.modified do
-      {:reply, :abort, state}
+      pid <- {tag, :abort}
+      {:noreply, state}
     else
       State[] = state = ensure_snapshot(state)
       clock = next_clock(state.clock, cmd)
@@ -208,30 +209,34 @@ defmodule Genomu.Channel do
                       Keyword.merge(options)
       result = Genomu.Coordinator.run(coord_options)
       State[] = state = memoize(key, cmd, clock, revision, state)
-      {:reply, result, state.modified((not cmd.assertion?) and cmd.type in [:set, :apply])}
+      pid <- {tag, result}
+      {:noreply, state.modified((not cmd.assertion?) and cmd.type in [:set, :apply])}
     end
   end
 
-  @spec commit(Genomu.gen_server_ref, Genomu.Transaction.t) :: :ok | {:error, reason :: term}
-  defcall commit(Genomu.Transaction[] = txn), state: State[parent: parent, clock: clock, log: log] = state do
+  @spec commit(Genomu.gen_server_ref, Genomu.Transaction.t, term, pid) :: :ok
+  defcast commit(Genomu.Transaction[] = txn, tag, pid), state: State[parent: parent, clock: clock, log: log] = state do
     case log do
       [] ->
         stop(self)
-        {:reply, :ok, state}
+        pid <- {tag, :ok}
+        {:noreply, state}
       _ ->
         clock = sync(parent, clock)
         txn = txn.clock(clock).log(Enum.reverse(log))
         result = Genomu.Coordinator.run(for: txn)
         update(parent, self, clock)
         stop(self)
-        {:reply, result, state.clock(clock)}
+        pid <- {tag, result}
+        {:noreply, state.clock(clock)}
     end
   end
 
-  @spec discard(Genomu.gen_server_ref) :: :ok
-  defcall discard, state: state do
+  @spec discard(Genomu.gen_server_ref, term, pid) :: :ok
+  defcast discard(tag, pid), state: state do
     stop(self)
-    {:reply, :ok, state}
+    pid <- {tag, :ok}
+    {:noreply, state}
   end
 
   @spec stop(Genomu.gen_server_ref) :: :ok
