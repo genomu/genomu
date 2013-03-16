@@ -86,4 +86,32 @@ defmodule Genomu.TestCase do
     File.rm_rf(data_dir)
     :net_kernel.stop
   end
+
+  def breaker(pid, f) do
+    spawn(fn -> breaker_loop(pid, f) end)
+  end
+
+  def breaker_loop(pid, f) do
+    receive do
+      x ->
+        f.(pid, x)
+        breaker_loop(pid, f)
+    end
+  end
+
+  def vnode_breaker(index, f) do
+    {:ok, vnode_pid} = :riak_core_vnode_manager.get_vnode_pid(index, Genomu.VNode)
+    breaker_pid = breaker(vnode_pid, f)
+
+    :meck.new(:riak_core_vnode_manager, [:passthrough])
+    :meck.expect(:riak_core_vnode_manager, :get_vnode_pid,
+                 fn(i, vn) ->
+                   if i == index, do: {:ok, breaker_pid}, else: :meck.passthrough([i,vn])
+                 end)
+    breaker_pid
+  end
+
+  def unbreak_vnodes do
+    :meck.unload(:riak_core_vnode_manager)
+  end
 end

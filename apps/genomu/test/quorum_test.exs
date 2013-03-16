@@ -24,4 +24,19 @@ defmodule Genomu.QuorumTest do
     end
   end
 
+  test "failing quorum results in a timeout", context do
+    conn = context[:conn]
+
+    [_,_,{last, _}] = :riak_core_apl.get_apl(:crypto.sha(["k1"]), 3, :genomu)
+
+    breaker_pid = vnode_breaker(last, fn(_pid, _msg) ->  end)
+
+    assert_raise Genomu.Client.TimeoutException, fn ->
+      C.execute(conn, ch, n: 3, r: 3, timeout: 4000, do: C.apply(ch, "k1", API.Core.identity("123")))
+    end
+
+    unbreak_vnodes
+    Process.exit(breaker_pid, :normal)
+  end
+
 end
