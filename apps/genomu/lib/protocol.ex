@@ -30,15 +30,8 @@ defmodule Genomu.Protocol do
   end
 
   def handle_info({:'EXIT', pid, _reason}, State[channels: channels] = state) do
-    case :ets.lookup(channels, pid) do
-      [] ->
-        {:stop, :normal, state}
-      [{_, channel}] ->
-        # Remove the channel and continue on
-        :ets.delete(channels, pid)
-        :ets.delete(channels, channel)
-        {:noreply, state}
-    end
+    :ets.delete(channels, pid)
+    {:noreply, state}
   end
 
   def handle_info({channel, response}, State[channels: channels, transport: transport, socket: socket] = state) do
@@ -82,21 +75,29 @@ defmodule Genomu.Protocol do
             :ets.insert(channels, [{channel, ch, subscriptions}, {ch, channel}])
         end
       [{_, ch, {txn_t, cmd_t}}] ->
-        {key, rest} = MsgPack.unpack(rest)
-        :ets.insert(channels, {{:t, channel}, Genomu.Utils.now_in_microseconds})
-        case key do
-          true ->
-            Genomu.Channel.commit(ch, txn_t, channel, self)
-          false ->
-            Genomu.Channel.discard(ch, channel, self)
-          _ ->
-            case key do
-              MsgPack.Map[map: [{"vsn", [key, rev]}]] -> addr = {key, rev}
-              addr -> :ok
-            end
-            {type, op} = MsgPack.unpack(rest)
-            cmd = command(type, op, cmd_t)
-            Genomu.Channel.execute(ch, addr, cmd, [], channel, self)
+        unless Process.alive?(ch) do
+          # If the channel crashed unexpectedly, clean it up and proceed
+          :ets.delete(channels, channel)
+          handle_packet(data, state)
+        else
+          {key, rest} = MsgPack.unpack(rest)
+          :ets.insert(channels, {{:t, channel}, Genomu.Utils.now_in_microseconds})
+          case key do
+            true ->
+              :ets.delete(channels, channel)
+              Genomu.Channel.commit(ch, txn_t, channel, self)
+            false ->
+              :ets.delete(channels, channel)
+              Genomu.Channel.discard(ch, channel, self)
+            _ ->
+              case key do
+                MsgPack.Map[map: [{"vsn", [key, rev]}]] -> addr = {key, rev}
+                addr -> :ok
+              end
+              {type, op} = MsgPack.unpack(rest)
+              cmd = command(type, op, cmd_t)
+              Genomu.Channel.execute(ch, addr, cmd, [], channel, self)
+          end
         end
     end
     state
