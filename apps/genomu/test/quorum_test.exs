@@ -20,7 +20,7 @@ defmodule Genomu.QuorumTest do
 
     C.execute(conn, ch, n: 10, do: C.apply(ch, "k", API.Core.identity("123")))
     assert_raise Genomu.Client.TimeoutException, fn ->
-      C.execute(conn, ch, n: 10, r: 11, do: C.apply(ch, "k", API.Core.identity))
+      C.execute(conn, ch, n: 10, r: 11, timeout: 4000, do: C.apply(ch, "k", API.Core.identity))
     end
   end
 
