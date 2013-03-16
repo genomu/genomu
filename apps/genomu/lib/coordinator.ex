@@ -1,7 +1,5 @@
 defmodule Genomu.Coordinator do
 
-  defmacrop default_timeout, do: 5000
-
   @type option  :: {:timeout, timeout} |
                    {:for, term}
 
@@ -39,7 +37,7 @@ defmodule Genomu.Coordinator do
 
   defrecord State, from: nil, for: nil, handler_state: nil,
                    quorums: [],
-                   timeout: nil,
+                   timeout: 5000,
                    sent_at: nil, started_at: nil,
                    touched_at: nil, elapsed: 0 do
 
@@ -56,17 +54,12 @@ defmodule Genomu.Coordinator do
 
  end
 
-  @spec default_options :: Keyword.t
-  defp default_options do
-    [timeout: default_timeout]
-  end
-
   alias Genomu.Coordinator.Protocol, as: Proto
   def init(opts) do
-    opts  = Keyword.merge(default_options, opts)
-    {:ok, hstate} = Proto.init(opts[:for])
-    hopts = Proto.options(opts[:for])
-    state = State.new(Keyword.merge(opts, Keyword.merge(hopts, handler_state: hstate))).touch
+    for = opts[:for]
+    {:ok, hstate} = Proto.init(for)
+    hopts = Proto.options(for)
+    state = State[timeout: hopts[:timeout] || State[].timeout, for: for].handler_state(hstate).touch
     {:ok, :init, state}
   end
 

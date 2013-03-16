@@ -101,7 +101,7 @@ defmodule Genomu.Channel do
   def init({root, parent, clock}) do
     if root == false, do: :folsom_metrics.notify({{Genomu.Metrics, Channels}, {:inc, 1}})
     :erlang.process_flag(:trap_exit, true)
-    {:ok, State.new(root: root, parent: parent, clock: clock).initialize}
+    {:ok, State[root: root, parent: parent, clock: clock].initialize}
   end
 
   @spec clock(Genomu.gen_server_ref) :: ITC.t
