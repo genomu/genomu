@@ -121,13 +121,15 @@ defmodule Genomu.Channel do
   @spec fork(Genomu.gen_server_ref, channel :: Genomu.gen_server_ref) :: ITC.t
   def fork(server), do: fork(server, nil)
 
-  defcall fork(receiver), state: State[clock: clock, outstanding: o] = state do
+  defcall fork(receiver), from: from, state: State[clock: clock, outstanding: o] = state do
     Lager.debug "Channel fork #{inspect receiver} state: #{inspect state}"
     State[] = state = ensure_children(state)
     {new_clock, channel_clock} = ITC.fork(clock)
     if nil?(receiver) do
       {:ok, channel} = :supervisor.start_child(Genomu.Sup.Channels, [false, self, channel_clock])
+      :gen_server.reply(from, {:ok, channel})
     else
+      :gen_server.reply(from, channel_clock)
       channel = receiver
     end
     ref = Process.monitor(channel)
@@ -135,13 +137,8 @@ defmodule Genomu.Channel do
                 [{{:ref, ref}, channel},
                  {channel, channel_clock},
                  {channel_clock, channel}])
-    State[] = state = state.clock(new_clock).outstanding([channel_clock|o])
-    if nil?(receiver) do
-      {:reply, {:ok, channel}, state}
-    else
-      Lager.debug "Channel #{inspect state.root}: forking #{inspect channel_clock} into #{inspect receiver}"
-      {:reply, channel_clock, state}
-    end
+    state = state.clock(new_clock).outstanding([channel_clock|o])
+    {:noreply, state}
   end
 
   @spec fork_root(Genomu.gen_server_ref) :: ITC.t
