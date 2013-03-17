@@ -3,6 +3,23 @@ Genomu
 
 A concurrency-oriented K/V database
 
+Motivation
+==========
+
+At the time of writing, http://nosql-database.org featured 150
+databases. No lack of options! However, the Event Sourcing category
+barely has any entries. Genomu, being at the intersection of this and
+Key Value / Tuple store categories, increases the number of options
+available in that niche.
+
+In all seriousness, the motivation to create this new database was
+to:
+
+  * address the complexity of concurrent updates and conflicts
+  * simplify creation of "real-time web" applications
+  * enable highly available write operations in presence of failures
+
+
 Installation
 ============
 
