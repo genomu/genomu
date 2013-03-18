@@ -66,6 +66,36 @@ defmodule Genomu.Module do
     filename = Path.join(dir,"#{name(module)}.json")
     File.mkdir_p(dir)
     File.write(filename, json)
+    doc_dir = Path.expand("../../../../doc/modules", __FILE__)
+    File.mkdir_p(doc_dir)
+    ops =
+    lc op inlist to_json(module)[:operations] do
+      filename = Path.join(doc_dir, "#{name(module)}_#{op[:name]}_#{op[:args]}.dita")
+      doc = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+      <reference id="ref_module_#{name(module)}_#{op[:name]}_#{op[:args]}">
+        <title>#{name(module)}.#{op[:name]}/#{op[:args]}</title>
+        #{if op[:doc] == :null, do: nil, else: op[:doc]}
+      </reference>
+      """
+      File.write(filename, doc)
+      {op[:name],op[:args]}
+    end
+    filename = Path.join(doc_dir, "#{name(module)}.ditamap")
+    pre = """
+    <?xml version="1.0" encoding="utf-8"?>
+    <!DOCTYPE map PUBLIC "-//OASIS//DTD DITA Map//EN" "map.dtd">
+      <map id="map_#{name(module)}">
+       <title>Module Reference: #{name(module)}</title>
+    """
+    refs = Enum.join(lc {op,arity} inlist ops do
+      %b[<topicref navtitle="#{op}/#{arity}"
+          href="#{name(module)}_#{op}_#{arity}.dita" type="reference"></topicref>]
+    end)
+    post = "</map>"
+    File.write(filename, pre <> refs <> post)
+
   end
 
   def to_json(module, version // Genomu.Mixfile.version) do
