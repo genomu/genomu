@@ -223,9 +223,8 @@ defmodule Genomu.Channel do
         txn = txn.clock(clock).log(Enum.reverse(log))
         result = Genomu.Coordinator.run(for: txn)
         update(parent, self, clock)
-        stop(self)
         pid <- {tag, result}
-        {:noreply, state.clock(clock)}
+        {:stop, :normal, state.clock(clock)}
     end
   end
 
