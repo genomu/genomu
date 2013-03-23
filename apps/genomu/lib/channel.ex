@@ -135,8 +135,7 @@ defmodule Genomu.Channel do
     ref = Process.monitor(channel)
     :ets.insert(state.children,
                 [{{:ref, ref}, channel},
-                 {channel, channel_clock},
-                 {channel_clock, channel}])
+                 {channel, channel_clock}])
     state = state.clock(new_clock).outstanding([channel_clock|o])
     {:noreply, state}
   end
@@ -173,8 +172,7 @@ defmodule Genomu.Channel do
   defcast update(channel, new_clock), state: State[children: c, outstanding: o] = state do
     case :ets.lookup(c, channel) do
       [{^channel, clock}] ->
-        :ets.insert(c, [{channel, new_clock}, {new_clock, channel}])
-        :ets.delete(c, clock)
+        :ets.insert(c, [{channel, new_clock}])
         state = state.outstanding([new_clock|o] -- [clock])
       [] -> 
         :ok # TODO: log a warning?
@@ -187,7 +185,6 @@ defmodule Genomu.Channel do
     [{^pid, child_clock}] = :ets.lookup(c, pid)
     :ets.delete(c, {:ref, ref})
     :ets.delete(c, pid)
-    :ets.delete(c, child_clock)
     clock = ITC.join(clock, child_clock)
     State[] = state = state.clock(clock).outstanding(o -- [child_clock])
     state = state.crash_clock(Enum.reduce(state.outstanding, clock, fn(c, c1) -> ITC.join(c, c1) end))
