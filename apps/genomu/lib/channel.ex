@@ -193,7 +193,8 @@ defmodule Genomu.Channel do
 
   @spec execute(pid, Genomu.key | Genomu.cell, Genomu.command, Keyword.t, term, pid) :: :ok
   defcast execute(key, Genomu.Command[] = cmd, options, tag, pid), state: State[] = state do
-    if cmd.assertion? and state.modified do
+    assertion = cmd.assertion?
+    if assertion and state.modified do
       pid <- {tag, :abort}
       {:noreply, state}
     else
@@ -201,13 +202,13 @@ defmodule Genomu.Channel do
       clock = next_clock(state.clock, cmd)
       cell = get_cell(key, state)
       revision = ITC.encode_binary(clock)
-      cmd = cmd.cell(cell).new_revision(revision)
+      Genomu.Command[] = cmd = cmd.cell(cell).new_revision(revision)
       coord_options = [for: cmd] |>
                       Keyword.merge(options)
       result = Genomu.Coordinator.run(coord_options)
       State[] = state = memoize(key, cmd, clock, revision, state)
       pid <- {tag, result}
-      {:noreply, state.modified((not cmd.assertion?) and cmd.type in [:set, :apply])}
+      {:noreply, state.modified((not assertion) and cmd.type in [:set, :apply])}
     end
   end
 
