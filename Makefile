@@ -25,9 +25,9 @@ start: all
 	@ulimit -n 4096 && ERL_LIBS=apps:deps elixir --name "genomu-$(instance)3@127.0.0.1" --erl "-config test/sys.3 -s Elixir-Genomu" --no-halt &
 
 stop:
-	@kill -9 `cat data/$(shell hostname | awk -F. '{print $$1;}')$(instance)1/genomu.pid` \
-                 `cat data/$(shell hostname | awk -F. '{print $$1;}')$(instance)2/genomu.pid` \
-                 `cat data/$(shell hostname | awk -F. '{print $$1;}')$(instance)3/genomu.pid`
+	@kill -9 `cat data/$(shell hostname | awk -F. '{print $$1;}')-$(instance)1/genomu.pid` \
+                 `cat data/$(shell hostname | awk -F. '{print $$1;}')-$(instance)2/genomu.pid` \
+                 `cat data/$(shell hostname | awk -F. '{print $$1;}')-$(instance)3/genomu.pid`
 	@rm -f data/$(shell hostname | awk -F. '{print $$1;}')*/genomu.pid
 
 remsh1:
