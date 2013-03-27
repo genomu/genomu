@@ -47,7 +47,7 @@ defmodule Genomu.Cluster do
   def join(node) when is_atom(node) do
     case :riak_core.staged_join(node) do
       :ok ->
-        :ok = Genomu.Channel.sync_with(Genomu.Channel.Root, {Genomu.Channel.Root, node})
+        :ok = Genomu.Channel.Root.sync_with(Genomu.Channel.Root, {Genomu.Channel.Root, node})
         :ok
       {:error, _} = error ->
         error

@@ -21,8 +21,6 @@ defmodule Genomu.Config do
   defproperty cluster_name, default: "default"
   @shortdoc "Port"
   defproperty port, default: 9101
-  @shortdoc "Root channels"
-  defproperty root_channels, default: 8
   @shortdoc "Storage"
   defproperty storage, default: Genomu.Storage.Memory.new
 
@@ -35,7 +33,6 @@ defmodule Genomu.Config do
        hostname: config.hostname,
        port: config.port,
        instance_name: config.instance_name,
-       root_channels: config.root_channels,
        storage: config.storage,
      ],
      riak_core: [

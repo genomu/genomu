@@ -12,7 +12,6 @@ defmodule Genomu.HTTP.Instance do
 
   def to_json(req, state) do
     json = [name: Genomu.instance_name,
-            root_channel: Genomu.Channel.clock(Genomu.Channel.Root) |> ITC.to_string,
             system_version: Genomu.system_version,
             instance_url: Genomu.instance_url,
             partitions: Genomu.Cluster.indices(Node.self) |> Enum.map(&1 |> to_binary),
