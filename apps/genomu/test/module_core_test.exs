@@ -28,7 +28,7 @@ defmodule Genomu.Module.CoreTest do
     conn = context[:conn]
 
     {:ok, ch} = C.begin(conn)
-    assert C.get(ch, "key", API.Core.compose(API.Core.identity, API.Core.identity("123"))) == "123"
+    assert C.get(ch, "key", API.Core.compose([API.Core.identity(123), API.Number.incr, API.Number.incr])) == 125
   end
 
   test "assert", context do

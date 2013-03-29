@@ -57,21 +57,17 @@ defmodule Genomu.Module.Core do
     new_value
   end
 
-  @args 2
+  @args 1
   @doc """
   <refbody>
    <section>
     <parml>
      <plentry>
-       <pt>f</pt>
-       <pd>Second operation</pd>
-     </plentry>
-     <plentry>
-       <pt>g</pt>
-       <pd>First operation</pd>
+       <pt>operations</pt>
+       <pd>An array of operations</pd>
      </plentry>
     </parml>
-    This operation composes two operations into one: <codeph>compose(f(),g())</codeph> is a representation
+    This operation composes multiple operations into one: <codeph>compose([g(),f()])</codeph> is a representation
     of <codeph>f(g())</codeph>
    </section>
    <example>
@@ -79,7 +75,7 @@ defmodule Genomu.Module.Core do
      to calculate the number of keys in the dictionary:
 
      <codeblock>
-       core.compose(list.length(), dict.keys())
+       core.compose([dict.keys(), list.length()])
      </codeblock>
    </example>
   </refbody>
@@ -89,12 +85,21 @@ defmodule Genomu.Module.Core do
     </linkpool>
   </related-links>
   """
-  def compose(value, MsgPack.fix_array(len: 2) = arr, opts) do
-    {[bin1, bin2], ""} = MsgPack.unpack(arr)
-    {op1, ""} = Genomu.Operation.next(bin1)
-    {op2, ""} = Genomu.Operation.next(bin2)
-    value = Genomu.Operation.apply(op2, value, opts)
-    Genomu.Operation.apply(op1, value, opts)
+  def compose(value, MsgPack.fix_array(rest: rest), opts) do
+    compose_(rest, value, opts)
+  end
+  def compose(value, MsgPack.array16(rest: rest), opts) do
+    compose_(rest, value, opts)
+  end
+  def compose(value, MsgPack.array32(rest: rest), opts) do
+    compose_(rest, value, opts)
+  end
+
+  defp compose_("", acc, _opts), do: acc
+  defp compose_(bin, acc, opts) do
+    {bop, rest} = MsgPack.unpack(bin)
+    {op, ""} = Genomu.Operation.next(bop)
+    compose_(rest, Genomu.Operation.apply(op, acc, opts), opts)
   end
 
   @args 1
