@@ -17,16 +17,17 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
      {:ok, t.update(staging: staging, log: log, commits: commits)}
   end
 
-  def lookup(T[log: log], {key, nil}) do
+  def lookup(T[log: log] = t, {key, nil}) do
      case ETS.lookup(log, key) do
        [] -> page = 0
        [{_, page}] -> :ok
      end
      case ETS.lookup(log, {key, page}) do
-       [{_, {_, {{value, op}, [{clock, txn_clock}|_history]}}}] ->
+       [{_, {_, [{clock, txn_clock}|_history]}}] ->
+         {value, op, clock, _} = lookup(t, {key, clock})
          {value, op, clock, txn_clock}
-       [{_, {_, {{value, op}, [clock|_history]}}}] ->
-         {value, op, clock, clock}
+       [{_, {_, [clock|_history]}}] ->
+         lookup(t, {key, clock})
       _ -> {@nil_value, "", "", ""}
      end
   end
@@ -50,11 +51,12 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
     case ETS.lookup(log, {key, page}) do
       [] ->
         {@nil_value, "", "", ""}
-      [{_key, {_, {{value, op}, [{entry_clock, ^rev}|_]}}}] ->
+      [{_key, {_, [{entry_clock, ^rev}|_]}}] ->
+        {value, op, ^entry_clock, _} = lookup(t, {key, entry_clock})
         {value, op, entry_clock, rev}
-      [{_key, {_, {{value, op}, [^rev|_]}}}] ->
-        {value, op, rev, rev}
-      [{_key, {_, {_, history}}}] ->
+      [{_key, {_, [^rev|_]}}] ->
+        lookup(t, {key, rev})
+      [{_key, {_, history}}] ->
         case Enum.find(history, fn(c) ->
                                     case c do
                                       {entry_clock, _} -> :ok
@@ -84,7 +86,7 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
      ETS.insert(staging, {cell, {value, operation}})
   end
 
-  def commit(T[staging: staging, log: log, commits: commits], revision, entries, txn_log, commit_object) do
+  def commit(T[staging: staging, log: log, commits: commits] = t, revision, entries, txn_log, commit_object) do
     {insertions, updates} =
     Enum.reduce(entries, {[], []}, fn({key, entry_clock}, {i, u}) ->
       case ETS.lookup(log, key) do
@@ -92,25 +94,33 @@ defimpl Genomu.Storage, for: Genomu.Storage.Memory do
           page = 0
           case ETS.lookup(log, {key, page}) do
             [] ->  history = []; value = @nil_value ; page_ctr = 0
-            [{_, {page_ctr, {{value, operation}, history}}}] -> :ok
+            [{_, {page_ctr, [{rev, _}|_] = history}}] -> 
+                  {value, operation, _, _,} = lookup(t, {key, rev})
+            [{_, {page_ctr, [rev|_] = history}}] -> 
+                  {value, operation, _, _,} = lookup(t, {key, rev})
           end
         [{_, page}] ->
-          [{_, {page_ctr, {{value, operation}, history}}}] = ETS.lookup(log, {key, page})
+          case ETS.lookup(log, {key, page}) do
+            [{_, {page_ctr, [{rev, _}|_] = history}}] ->
+              {value, operation, _, _,} = lookup(t, {key, rev})
+            [{_, {page_ctr, [rev|_] = history}}] ->
+              {value, operation, _, _,} = lookup(t, {key, rev})
+          end
       end
       case history do
         [{prev_version, _}|_] -> :ok
         [prev_version|_] -> :ok
         [] -> prev_version = ""
       end
-      {value, operation, updates} = recalculate(txn_log, prev_version, key, operation, value, [], staging)
+      {_value, _operation, updates} = recalculate(txn_log, prev_version, key, operation, value, [], staging)
       history_entry = history_entry(entry_clock, revision)
       if page_ctr <= @object_page_size do
-        {[{{key, page}, {page_ctr + 1, {{value, operation}, [history_entry|history]}}}|i],
+        {[{{key, page}, {page_ctr + 1, [history_entry|history]}}|i],
          updates ++ u}
       else
         # allocate a new page
         {[{key, page + 1},
-         {{key, page + 1}, {1, {{value, operation}, [history_entry]}}}|i], updates ++ u}
+         {{key, page + 1}, {1, [history_entry]}}|i], updates ++ u}
       end
     end)
     ETS.insert(log, insertions)
